@@ -21,7 +21,9 @@ THE SOFTWARE.
 */
 package main
 
-import "github.com/vangent/stravaupdater/cmd"
+import (
+	"github.com/vangent/stravaupdater/cmd"
+)
 
 func main() {
 	cmd.Execute()

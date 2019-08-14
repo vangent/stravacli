@@ -22,50 +22,34 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 	"github.com/strava/go.strava"
 )
 
 func init() {
 	var accessToken string
+	var inFile string
+	var dryRun bool
 
 	uploadCmd := &cobra.Command{
 		Use:   "upload",
 		Short: "TODO",
 		Long:  `TODO`,
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return upload(accessToken, args[0])
+		Args:  cobra.NoArgs,
+		RunE: func(_ *cobra.Command, _ []string) error {
+			return upload(accessToken, inFile, dryRun)
 		},
 	}
 	uploadCmd.Flags().StringVarP(&accessToken, "access_token", "t", "", "Strava access token")
+	uploadCmd.MarkFlagRequired("access_token")
+	uploadCmd.Flags().BoolVar(&dryRun, "dry_run", false, "dry run")
 	rootCmd.AddCommand(uploadCmd)
 }
 
-func upload(accessToken, inFile string) error {
+func upload(accessToken, inFile string, dryrun bool) error {
 	client := strava.NewClient(accessToken)
 
-	athleteSvc := strava.NewCurrentAthleteService(client)
-
-	page := 1
-	nActivities := 0
-	for {
-		fmt.Printf("Handled %d activities...", nActivities)
-		activities, err := athleteSvc.ListActivities().Page(page).PerPage(30).Do()
-		if err != nil {
-			return err
-		}
-		nActivities += len(activities)
-		for _, activity := range activities {
-			fmt.Printf("  %s %s (%d) has private %v", activity.StartDate.Format("2006-01-02"), activity.Name, activity.Id, activity.Private)
-		}
-		if len(activities) < 30 {
-			break
-		}
-		page++
-	}
-	fmt.Printf("Found %d activities.", nActivities)
+	activitiesService := strava.NewActivitiesService(client)
+	_ = activitiesService
 	return nil
 }

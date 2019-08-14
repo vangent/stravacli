@@ -22,32 +22,94 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"encoding/csv"
+	"fmt"
+	"io"
+	"log"
+	"os"
+
 	"github.com/spf13/cobra"
 	"github.com/strava/go.strava"
 )
 
 func init() {
 	var accessToken string
-	var dryRun bool
+	var outFile string
+	var maxActivities int
 
 	downloadCmd := &cobra.Command{
 		Use:   "download",
 		Short: "Download Strava activites to a .csv file",
 		Long:  `Download Strava activites to a .csv file.`,
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return download(accessToken, args[0], dryRun)
+		Args:  cobra.NoArgs,
+		RunE: func(_ *cobra.Command, _ []string) error {
+			return download(accessToken, outFile, maxActivities)
 		},
 	}
-
 	downloadCmd.Flags().StringVarP(&accessToken, "access_token", "t", "", "Strava access token")
-	downloadCmd.Flags().BoolVar(&dryRun, "dry_run", false, "dry run")
+	downloadCmd.MarkFlagRequired("access_token")
+	downloadCmd.Flags().StringVar(&outFile, "out", "", "output filename, or leave empty to output to stdout")
+	downloadCmd.Flags().IntVar(&maxActivities, "max", 0, "maximum # of activities to download (default 0 means no limit)")
 	rootCmd.AddCommand(downloadCmd)
 }
 
-func download(accessToken, outFile string, dryRun bool) error {
+const pageSize = 30
+
+func download(accessToken, outFile string, maxActivities int) error {
 	client := strava.NewClient(accessToken)
-	activitiesService := strava.NewActivitiesService(client)
-	_ = activitiesService
+	athleteSvc := strava.NewCurrentAthleteService(client)
+
+	var w io.Writer
+	if outFile == "" {
+		w = os.Stdout
+	} else {
+		f, err := os.Create(outFile)
+		if err != nil {
+			return fmt.Errorf("failed to open output file %q: %v", outFile, err)
+		}
+		defer f.Close()
+		w = f
+	}
+	out := csv.NewWriter(w)
+	defer out.Flush()
+
+	header := []string{
+		"ID",
+		"StartDate",
+		"Name",
+	}
+	out.Write(header)
+	out.Flush()
+	page := 1
+	n := 0
+PageLoop:
+	for {
+		activities, err := athleteSvc.ListActivities().Page(page).PerPage(pageSize).Do()
+		if err != nil {
+			return fmt.Errorf("failed ListActivities call (page %d, per page %d)", page, pageSize)
+		}
+		for _, activity := range activities {
+			/*
+				&strava.ActivitySummary{Id:2616421579, ExternalId:"", UploadId:0, Name:"Lunch Spin Workout", Distance:0, MovingTime:1800, ElapsedTime:1800, TotalElevationGain:0, Type:"Ride", StartDate, Trainer:true, Commute:false, Manual:true, Private:false, Flagged:false, GearId:"", AverageSpeed:0, MaximunSpeed:0, AverageCadence:0, AverageTemperature:0, AveragePower:0, WeightedAveragePower:0, Kilojoules:0, DeviceWatts:false, AverageHeartrate:0, MaximumHeartrate:0, Truncated:0, HasKudoed:false}
+			*/
+			row := []string{
+				fmt.Sprintf("%d", activity.Id),
+				activity.StartDate.Format("2006-01-02"),
+				activity.Name,
+			}
+			out.Write(row)
+			out.Flush()
+			n++
+			if maxActivities != -1 && n == maxActivities {
+				break PageLoop
+			}
+		}
+		if len(activities) < pageSize {
+			break
+		}
+		log.Printf("Handled %d activities, fetching next page...", n)
+		page++
+	}
+	log.Printf("Downloaded %d activities.", n)
 	return nil
 }
