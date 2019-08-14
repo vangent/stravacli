@@ -22,14 +22,17 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"context"
 	"encoding/csv"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"strconv"
 
+	"github.com/antihax/optional"
+	"github.com/dwj300/strava"
 	"github.com/spf13/cobra"
-	"github.com/strava/go.strava"
 )
 
 func init() {
@@ -56,8 +59,9 @@ func init() {
 const pageSize = 30
 
 func download(accessToken, outFile string, maxActivities int) error {
-	client := strava.NewClient(accessToken)
-	athleteSvc := strava.NewCurrentAthleteService(client)
+	ctx := context.WithValue(context.Background(), strava.ContextAccessToken, accessToken)
+	cfg := strava.NewConfiguration()
+	client := strava.NewAPIClient(cfg)
 
 	var w io.Writer
 	if outFile == "" {
@@ -76,26 +80,42 @@ func download(accessToken, outFile string, maxActivities int) error {
 	header := []string{
 		"ID",
 		"StartDate",
+		"Type",
 		"Name",
+		"Distance",
+		"Duration",
+		"GearID",
+		"Commute?",
+		"Trainer?",
+		"Private?",
 	}
 	out.Write(header)
 	out.Flush()
-	page := 1
+	page := int32(1)
 	n := 0
 PageLoop:
 	for {
-		activities, err := athleteSvc.ListActivities().Page(page).PerPage(pageSize).Do()
+		// TODO: Add before/after filter flags.
+		req := &strava.GetLoggedInAthleteActivitiesOpts{
+			Page:    optional.NewInt32(page),
+			PerPage: optional.NewInt32(pageSize),
+		}
+		activities, _, err := client.ActivitiesApi.GetLoggedInAthleteActivities(ctx, req)
 		if err != nil {
 			return fmt.Errorf("failed ListActivities call (page %d, per page %d)", page, pageSize)
 		}
 		for _, activity := range activities {
-			/*
-				&strava.ActivitySummary{Id:2616421579, ExternalId:"", UploadId:0, Name:"Lunch Spin Workout", Distance:0, MovingTime:1800, ElapsedTime:1800, TotalElevationGain:0, Type:"Ride", StartDate, Trainer:true, Commute:false, Manual:true, Private:false, Flagged:false, GearId:"", AverageSpeed:0, MaximunSpeed:0, AverageCadence:0, AverageTemperature:0, AveragePower:0, WeightedAveragePower:0, Kilojoules:0, DeviceWatts:false, AverageHeartrate:0, MaximumHeartrate:0, Truncated:0, HasKudoed:false}
-			*/
 			row := []string{
-				fmt.Sprintf("%d", activity.Id),
+				strconv.FormatInt(activity.Id, 10),
 				activity.StartDate.Format("2006-01-02"),
+				string(*activity.Type_),
 				activity.Name,
+				strconv.FormatFloat(float64(activity.Distance), 'f', 2, 64),
+				strconv.FormatInt(int64(activity.ElapsedTime), 10),
+				activity.GearId,
+				strconv.FormatBool(activity.Commute),
+				strconv.FormatBool(activity.Trainer),
+				strconv.FormatBool(activity.Private),
 			}
 			out.Write(row)
 			out.Flush()

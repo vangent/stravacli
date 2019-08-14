@@ -22,8 +22,10 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"context"
+
+	"github.com/dwj300/strava"
 	"github.com/spf13/cobra"
-	"github.com/strava/go.strava"
 )
 
 func init() {
@@ -47,9 +49,10 @@ func init() {
 }
 
 func upload(accessToken, inFile string, dryrun bool) error {
-	client := strava.NewClient(accessToken)
-
-	activitiesService := strava.NewActivitiesService(client)
-	_ = activitiesService
+	ctx := context.WithValue(context.Background(), strava.ContextAccessToken, accessToken)
+	cfg := strava.NewConfiguration()
+	client := strava.NewAPIClient(cfg)
+	_ = client
+	_ = ctx
 	return nil
 }

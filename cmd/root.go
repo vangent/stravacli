@@ -51,6 +51,7 @@ func Execute() {
 			return
 		}
 	})
+	// TODO: https://godoc.org/github.com/strava/go.strava#OAuthAuthenticator
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "enable verbose debug logging")
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
