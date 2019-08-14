@@ -19,10 +19,35 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-package main
+package cmd
 
-import "github.com/vangent/stravaupdater/cmd"
+import (
+	"github.com/spf13/cobra"
+	"github.com/strava/go.strava"
+)
 
-func main() {
-	cmd.Execute()
+func init() {
+	var accessToken string
+	var dryRun bool
+
+	downloadCmd := &cobra.Command{
+		Use:   "download",
+		Short: "Download Strava activites to a .csv file",
+		Long:  `Download Strava activites to a .csv file.`,
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return download(accessToken, args[0], dryRun)
+		},
+	}
+
+	downloadCmd.Flags().StringVarP(&accessToken, "access_token", "t", "", "Strava access token")
+	downloadCmd.Flags().BoolVar(&dryRun, "dry_run", false, "dry run")
+	rootCmd.AddCommand(downloadCmd)
+}
+
+func download(accessToken, outFile string, dryRun bool) error {
+	client := strava.NewClient(accessToken)
+	activitiesService := strava.NewActivitiesService(client)
+	_ = activitiesService
+	return nil
 }
