@@ -19,6 +19,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
+
 package cmd
 
 import (
@@ -29,36 +30,56 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/antihax/optional"
 	"github.com/dwj300/strava"
 	"github.com/spf13/cobra"
 )
 
+const (
+	pageSize      = 25                    // # of activities to download per page
+	dayFormat     = "2006-01-02"          // format for dates
+	dayTimeFormat = "2006-01-02 15:04:05" // format for date+time
+)
+
 func init() {
 	var accessToken string
 	var outFile string
 	var maxActivities int
+	var beforeStr, afterStr string
 
 	downloadCmd := &cobra.Command{
 		Use:   "download",
-		Short: "Download Strava activites to a .csv file",
-		Long:  `Download Strava activites to a .csv file.`,
+		Short: "Download Strava activites",
+		Long:  `Download Strava activites.`,
 		Args:  cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return download(accessToken, outFile, maxActivities)
+			var before, after time.Time
+			var err error
+			if beforeStr != "" {
+				if before, err = time.Parse(dayFormat, beforeStr); err != nil {
+					return fmt.Errorf("invalid --before %q (should be YYYY-MM-DD): %v", beforeStr, err)
+				}
+			}
+			if afterStr != "" {
+				if after, err = time.Parse(dayFormat, afterStr); err != nil {
+					return fmt.Errorf("invalid --after %q (should be YYYY-MM-DD): %v", afterStr, err)
+				}
+			}
+			return download(accessToken, outFile, maxActivities, before, after)
 		},
 	}
 	downloadCmd.Flags().StringVarP(&accessToken, "access_token", "t", "", "Strava access token")
 	downloadCmd.MarkFlagRequired("access_token")
 	downloadCmd.Flags().StringVar(&outFile, "out", "", "output filename, or leave empty to output to stdout")
 	downloadCmd.Flags().IntVar(&maxActivities, "max", 0, "maximum # of activities to download (default 0 means no limit)")
+	downloadCmd.Flags().StringVar(&beforeStr, "before", "", "only download activities before this date (YYYY-MM-DD)")
+	downloadCmd.Flags().StringVar(&afterStr, "after", "", "only download activities after this date (YYYY-MM-DD)")
 	rootCmd.AddCommand(downloadCmd)
 }
 
-const pageSize = 30
-
-func download(accessToken, outFile string, maxActivities int) error {
+func download(accessToken, outFile string, maxActivities int, before, after time.Time) error {
 	ctx := context.WithValue(context.Background(), strava.ContextAccessToken, accessToken)
 	cfg := strava.NewConfiguration()
 	client := strava.NewAPIClient(cfg)
@@ -95,10 +116,15 @@ func download(accessToken, outFile string, maxActivities int) error {
 	n := 0
 PageLoop:
 	for {
-		// TODO: Add before/after filter flags.
 		req := &strava.GetLoggedInAthleteActivitiesOpts{
 			Page:    optional.NewInt32(page),
 			PerPage: optional.NewInt32(pageSize),
+		}
+		if !before.IsZero() {
+			req.Before = optional.NewInt32(int32(before.Unix()))
+		}
+		if !after.IsZero() {
+			req.After = optional.NewInt32(int32(after.Unix()))
 		}
 		activities, _, err := client.ActivitiesApi.GetLoggedInAthleteActivities(ctx, req)
 		if err != nil {
