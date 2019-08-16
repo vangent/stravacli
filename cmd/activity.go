@@ -68,6 +68,9 @@ func (a *Activity) VerifyForCreate() error {
 // VerifyForUpdate checks to see that a looks like it can be uploaded
 // as an update to prev.
 func (a *Activity) VerifyForUpdate(prev *Activity) error {
+	if a.ID == 0 {
+		return errors.New("ID must be set for update")
+	}
 	if !a.Start.Equal(prev.Start) {
 		return errors.New("sorry, can't modify Start")
 	}

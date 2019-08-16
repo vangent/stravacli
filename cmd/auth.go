@@ -46,7 +46,7 @@ func init() {
 		Long:  `Get a Strava access token.`,
 		Args:  cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return auth(clientID, clientSecret, port, readOnly)
+			return doAuth(clientID, clientSecret, port, readOnly)
 		},
 	}
 	authCmd.Flags().StringVar(&clientID, "client_id", "", "Strava client ID from https://www.strava.com/settings/api")
@@ -58,9 +58,9 @@ func init() {
 	rootCmd.AddCommand(authCmd)
 }
 
-// auth performs the oauth authentication workflow.
+// doAuth performs the oauth authentication workflow.
 // https://developers.strava.com/docs/authentication/
-func auth(clientID, clientSecret string, port int, readOnly bool) error {
+func doAuth(clientID, clientSecret string, port int, readOnly bool) error {
 	type authResult struct {
 		err  error
 		code string

@@ -25,12 +25,9 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"io"
-	"os"
 	"time"
 
 	"github.com/antihax/optional"
-	"github.com/gocarina/gocsv"
 	"github.com/spf13/cobra"
 	"github.com/vangent/strava"
 )
@@ -64,7 +61,7 @@ func init() { //
 					return fmt.Errorf("invalid --after %q (should be YYYY-MM-DD): %v", afterStr, err)
 				}
 			}
-			return download(accessToken, outFile, maxActivities, before, after)
+			return doDownload(accessToken, outFile, maxActivities, before, after)
 		},
 	}
 	downloadCmd.Flags().StringVarP(&accessToken, "access_token", "t", "", "Strava access token; use the auth command to get one")
@@ -76,7 +73,7 @@ func init() { //
 	rootCmd.AddCommand(downloadCmd)
 }
 
-func download(accessToken, outFile string, maxActivities int, before, after time.Time) error {
+func doDownload(accessToken, outFile string, maxActivities int, before, after time.Time) error {
 	ctx := context.WithValue(context.Background(), strava.ContextAccessToken, accessToken)
 	cfg := strava.NewConfiguration()
 	client := strava.NewAPIClient(cfg)
@@ -125,23 +122,5 @@ PageLoop:
 		page++
 	}
 	fmt.Printf("Downloaded %d activities.\n", len(activities))
-
-	var w io.Writer
-	if outFile == "" {
-		w = os.Stdout
-	} else {
-		f, err := os.Create(outFile)
-		if err != nil {
-			return fmt.Errorf("failed to open output file %q: %v", outFile, err)
-		}
-		defer f.Close()
-		w = f
-	}
-
-	csv, err := gocsv.MarshalString(activities)
-	if err != nil {
-		return fmt.Errorf("failed to generate .csv: %v", err)
-	}
-	fmt.Fprintf(w, csv)
-	return nil
+	return writeCSV(outFile, activities)
 }
