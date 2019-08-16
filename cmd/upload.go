@@ -39,14 +39,14 @@ func init() {
 
 	uploadCmd := &cobra.Command{
 		Use:   "upload",
-		Short: "TODO",
-		Long:  `TODO`,
+		Short: "Upload new and/or modified Strava activites",
+		Long:  `Upload new and/or modified Strava activites.`,
 		Args:  cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			return upload(accessToken, origFile, updatedFile, dryRun)
 		},
 	}
-	uploadCmd.Flags().StringVarP(&accessToken, "access_token", "t", "", "Strava access token")
+	uploadCmd.Flags().StringVarP(&accessToken, "access_token", "t", "", "Strava access token; use the auth command to get one")
 	uploadCmd.MarkFlagRequired("access_token")
 	uploadCmd.Flags().StringVar(&origFile, "orig", "", "original .csv file from download")
 	uploadCmd.MarkFlagRequired("orig")
