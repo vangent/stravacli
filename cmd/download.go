@@ -24,26 +24,37 @@ package cmd
 
 import (
 	"context"
-	"encoding/csv"
 	"fmt"
 	"io"
-	"log"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/antihax/optional"
 	"github.com/dwj300/strava"
+	"github.com/gocarina/gocsv"
 	"github.com/spf13/cobra"
 )
 
 const (
-	pageSize      = 25                    // # of activities to download per page
-	dayFormat     = "2006-01-02"          // format for dates
-	dayTimeFormat = "2006-01-02 15:04:05" // format for date+time
+	pageSize  = 25           // # of activities to download per page
+	dayFormat = "2006-01-02" // format for date flag
 )
 
-func init() {
+// Activity represents a single Strava activity.
+type Activity struct {
+	ID          int64     `csv:"ID (C)"`
+	Start       time.Time `csv:"Start (C)"`
+	Type        string    `csv:"Type (CE)"`
+	Name        string    `csv:"Name (CE)"`
+	Description string    `csv:"Description (C)"`
+	Duration    int32     `csv:"Duration (seconds) (C)"`
+	Distance    float32   `csv:"Distance (C)"`
+	Private     bool      `csv:"Private? ()"`
+	Commute     bool      `csv:"Commute? (CE)"`
+	Trainer     bool      `csv:"Trainer? (CE)"`
+}
+
+func init() { //
 	var accessToken string
 	var outFile string
 	var maxActivities int
@@ -84,36 +95,9 @@ func download(accessToken, outFile string, maxActivities int, before, after time
 	cfg := strava.NewConfiguration()
 	client := strava.NewAPIClient(cfg)
 
-	var w io.Writer
-	if outFile == "" {
-		w = os.Stdout
-	} else {
-		f, err := os.Create(outFile)
-		if err != nil {
-			return fmt.Errorf("failed to open output file %q: %v", outFile, err)
-		}
-		defer f.Close()
-		w = f
-	}
-	out := csv.NewWriter(w)
-	defer out.Flush()
-
-	header := []string{
-		"ID",
-		"StartDate",
-		"Type",
-		"Name",
-		"Distance",
-		"Duration",
-		"GearID",
-		"Commute?",
-		"Trainer?",
-		"Private?",
-	}
-	out.Write(header)
-	out.Flush()
 	page := int32(1)
-	n := 0
+	var activities []*Activity
+
 PageLoop:
 	for {
 		req := &strava.GetLoggedInAthleteActivitiesOpts{
@@ -126,36 +110,52 @@ PageLoop:
 		if !after.IsZero() {
 			req.After = optional.NewInt32(int32(after.Unix()))
 		}
-		activities, _, err := client.ActivitiesApi.GetLoggedInAthleteActivities(ctx, req)
+		summaries, _, err := client.ActivitiesApi.GetLoggedInAthleteActivities(ctx, req)
 		if err != nil {
 			return fmt.Errorf("failed ListActivities call (page %d, per page %d)", page, pageSize)
 		}
-		for _, activity := range activities {
-			row := []string{
-				strconv.FormatInt(activity.Id, 10),
-				activity.StartDate.Format("2006-01-02"),
-				string(*activity.Type_),
-				activity.Name,
-				strconv.FormatFloat(float64(activity.Distance), 'f', 2, 64),
-				strconv.FormatInt(int64(activity.ElapsedTime), 10),
-				activity.GearId,
-				strconv.FormatBool(activity.Commute),
-				strconv.FormatBool(activity.Trainer),
-				strconv.FormatBool(activity.Private),
+		for _, a := range summaries {
+			activity := &Activity{
+				ID:          a.Id,
+				Start:       a.StartDate,
+				Type:        string(*a.Type_),
+				Name:        a.Name,
+				Description: "", // not included in ActivitySummary
+				Duration:    a.ElapsedTime,
+				Distance:    a.Distance,
+				Private:     a.Private,
+				Commute:     a.Commute,
+				Trainer:     a.Trainer,
 			}
-			out.Write(row)
-			out.Flush()
-			n++
-			if maxActivities != -1 && n == maxActivities {
+			activities = append(activities, activity)
+			if maxActivities != -1 && len(activities) == maxActivities {
 				break PageLoop
 			}
 		}
 		if len(activities) < pageSize {
 			break
 		}
-		log.Printf("Handled %d activities, fetching next page...", n)
+		fmt.Printf("%d activities so far, fetching next %d...\n", len(activities), pageSize)
 		page++
 	}
-	log.Printf("Downloaded %d activities.", n)
+	fmt.Printf("Downloaded %d activities.\n", len(activities))
+
+	var w io.Writer
+	if outFile == "" {
+		w = os.Stdout
+	} else {
+		f, err := os.Create(outFile)
+		if err != nil {
+			return fmt.Errorf("failed to open output file %q: %v", outFile, err)
+		}
+		defer f.Close()
+		w = f
+	}
+
+	csv, err := gocsv.MarshalString(activities)
+	if err != nil {
+		return fmt.Errorf("failed to generate .csv: %v", err)
+	}
+	fmt.Fprintf(w, csv)
 	return nil
 }

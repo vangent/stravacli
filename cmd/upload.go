@@ -23,15 +23,18 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"context"
+	"fmt"
+	"log"
+	"os"
 
-	"github.com/dwj300/strava"
+	"github.com/gocarina/gocsv"
 	"github.com/spf13/cobra"
 )
 
 func init() {
 	var accessToken string
-	var inFile string
+	var origFile string
+	var updatedFile string
 	var dryRun bool
 
 	uploadCmd := &cobra.Command{
@@ -40,20 +43,75 @@ func init() {
 		Long:  `TODO`,
 		Args:  cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return upload(accessToken, inFile, dryRun)
+			return upload(accessToken, origFile, updatedFile, dryRun)
 		},
 	}
 	uploadCmd.Flags().StringVarP(&accessToken, "access_token", "t", "", "Strava access token")
 	uploadCmd.MarkFlagRequired("access_token")
-	uploadCmd.Flags().BoolVar(&dryRun, "dry_run", false, "dry run")
+	uploadCmd.Flags().StringVar(&origFile, "orig", "", "original .csv file from download")
+	uploadCmd.MarkFlagRequired("orig")
+	uploadCmd.Flags().StringVar(&updatedFile, "updated", "", ".csv with modifications")
+	uploadCmd.MarkFlagRequired("updated")
+	uploadCmd.Flags().BoolVar(&dryRun, "dry_run", false, "do a dry run: print out proposed changes")
 	rootCmd.AddCommand(uploadCmd)
 }
 
-func upload(accessToken, inFile string, dryrun bool) error {
-	ctx := context.WithValue(context.Background(), strava.ContextAccessToken, accessToken)
-	cfg := strava.NewConfiguration()
-	client := strava.NewAPIClient(cfg)
-	_ = client
-	_ = ctx
+func upload(accessToken, origFile, updatedFile string, dryRun bool) error {
+
+	var orig map[int64]*Activity
+	activities, err := loadCSV(origFile)
+	if err != nil {
+		return err
+	}
+	orig = map[int64]*Activity{}
+	for _, a := range activities {
+		orig[a.ID] = a
+	}
+
+	activities, err = loadCSV(updatedFile)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Loaded %d updated activities and %d original activities.\n", len(activities), len(orig))
+	nUpdates, nCreates := 0, 0
+	for _, a := range activities {
+		if a.ID == 0 {
+			// Manual upload.
+			// TODO: Improve dryRun printout.
+			// TODO: Manual upload.
+			// TODO: Check for possible duplicates?
+			fmt.Printf("Would create: %v\n", a)
+			nCreates++
+			continue
+		}
+		// Possible update.
+		prev := orig[a.ID]
+		if prev == nil {
+			return fmt.Errorf("activity ID %d from %q isn't present in %q", a.ID, updatedFile, origFile)
+		}
+		if *prev == *a {
+			log.Printf("no change for ID %d", a.ID)
+			continue
+		}
+		// TODO: Improve dryRun printout.
+		// TODO: UpdateActivity.
+		fmt.Printf("Would update ID %d: DELTA\n", a.ID)
+		nUpdates++
+	}
+	fmt.Printf("Found %d updates and %d creates.\n", nUpdates, nCreates)
 	return nil
+}
+
+func loadCSV(filename string) ([]*Activity, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open %q: %v", filename, err)
+	}
+	defer f.Close()
+	var activities []*Activity
+	if err := gocsv.UnmarshalFile(f, &activities); err != nil {
+		return nil, fmt.Errorf("failed to parse %q: %v", filename, err)
+	}
+	return activities, nil
 }

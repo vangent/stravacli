@@ -11,6 +11,8 @@ github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/dwj300/strava v0.0.0-20190422023739-69a0ccd02663 h1:5cXEeYYcW68bLTS/F+BqCU9jtf/VsE1gm8EN6r2xl6Y=
 github.com/dwj300/strava v0.0.0-20190422023739-69a0ccd02663/go.mod h1:UqOLtNU3AKR3yesED2uDAHQwgJ/Pbvy9syUtc6xdraY=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
+github.com/gocarina/gocsv v0.0.0-20190802110148-150c53a64ab6 h1:dDlqZycuCTXzvNWJtIdPZkdb31SKGncWIH82G/ElarQ=
+github.com/gocarina/gocsv v0.0.0-20190802110148-150c53a64ab6/go.mod h1:/oj50ZdPq/cUjA02lMZhijk5kR31SEydKyqah1OgBuo=
 github.com/golang/protobuf v1.2.0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
