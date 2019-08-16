@@ -33,9 +33,9 @@ import (
 
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
-	Use:   "stravaupdater",
-	Short: "A tool for updating Strava activities in bulk",
-	Long:  `A tool for updating Strava activities in bulk.`,
+	Use:   "stravacli",
+	Short: "A command-line tool for working with Strava activities",
+	Long:  `A command-line tool for working with Strava activities.`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

@@ -22,7 +22,7 @@ THE SOFTWARE.
 package main
 
 import (
-	"github.com/vangent/stravaupdater/cmd"
+	"github.com/vangent/stravacli/cmd"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-# stravaupdater
-A tool for updating Strava activities in bulk.
+# stravacli
+A command-line tool for working with Strava activities.
 
 Work in progress.

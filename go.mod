@@ -1,4 +1,4 @@
-module github.com/vangent/stravaupdater
+module github.com/vangent/stravacli
 
 go 1.12
 
