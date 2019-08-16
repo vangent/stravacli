@@ -23,12 +23,16 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 
+	"github.com/antihax/optional"
 	"github.com/gocarina/gocsv"
 	"github.com/spf13/cobra"
+	"github.com/vangent/strava"
 )
 
 func init() {
@@ -52,12 +56,11 @@ func init() {
 	uploadCmd.MarkFlagRequired("orig")
 	uploadCmd.Flags().StringVar(&updatedFile, "updated", "", ".csv with modifications")
 	uploadCmd.MarkFlagRequired("updated")
-	uploadCmd.Flags().BoolVar(&dryRun, "dry_run", false, "do a dry run: print out proposed changes")
+	uploadCmd.Flags().BoolVar(&dryRun, "dryrun", false, "do a dry run: print out proposed changes")
 	rootCmd.AddCommand(uploadCmd)
 }
 
 func upload(accessToken, origFile, updatedFile string, dryRun bool) error {
-
 	var orig map[int64]*Activity
 	activities, err := loadCSV(origFile)
 	if err != nil {
@@ -73,15 +76,17 @@ func upload(accessToken, origFile, updatedFile string, dryRun bool) error {
 		return err
 	}
 
-	fmt.Printf("Loaded %d updated activities and %d original activities.\n", len(activities), len(orig))
+	ctx := context.WithValue(context.Background(), strava.ContextAccessToken, accessToken)
+	apiSvc := strava.NewAPIClient(strava.NewConfiguration()).ActivitiesApi
+
+	fmt.Printf("Found %d activities in %q and %d activities in %q.\n", len(activities), updatedFile, len(orig), origFile)
 	nUpdates, nCreates := 0, 0
-	for _, a := range activities {
+	for i, a := range activities {
 		if a.ID == 0 {
 			// Manual upload.
-			// TODO: Improve dryRun printout.
-			// TODO: Manual upload.
-			// TODO: Check for possible duplicates?
-			fmt.Printf("Would create: %v\n", a)
+			if err := doCreate(ctx, apiSvc, a, dryRun); err != nil {
+				return fmt.Errorf("failed to create activity %v near line %d: %v", a, i+1, err)
+			}
 			nCreates++
 			continue
 		}
@@ -94,9 +99,9 @@ func upload(accessToken, origFile, updatedFile string, dryRun bool) error {
 			log.Printf("no change for ID %d", a.ID)
 			continue
 		}
-		// TODO: Improve dryRun printout.
-		// TODO: UpdateActivity.
-		fmt.Printf("Would update ID %d: DELTA\n", a.ID)
+		if err := doUpdate(ctx, apiSvc, a, prev, dryRun); err != nil {
+			return fmt.Errorf("failed to update activity %v near line %d: %v", a, i+1, err)
+		}
 		nUpdates++
 	}
 	fmt.Printf("Found %d updates and %d creates.\n", nUpdates, nCreates)
@@ -114,4 +119,72 @@ func loadCSV(filename string) ([]*Activity, error) {
 		return nil, fmt.Errorf("failed to parse %q: %v", filename, err)
 	}
 	return activities, nil
+}
+
+func doCreate(ctx context.Context, apiSvc *strava.ActivitiesApiService, a *Activity, dryRun bool) error {
+	// TODO: Consider checking for duplicates.
+	// Maybe instead, require that --orig be empty for creating, and separate creating
+	// from updating. Then create can output a new .csv file with IDs filled in for anything
+	// it created.
+	if err := a.VerifyForCreate(); err != nil {
+		return err
+	}
+	if dryRun {
+		fmt.Printf("  Would create %v...\n", a)
+		return nil
+	}
+	fmt.Printf("  Creating %v...\n", a)
+	opts := strava.CreateActivityOpts{}
+	if a.Description != "" {
+		opts.Description = optional.NewString(a.Description)
+	}
+	if a.Distance != 0 {
+		opts.Distance = optional.NewFloat32(a.Distance)
+	}
+	if a.Trainer {
+		opts.Trainer = optional.NewInt32(1)
+	}
+	if a.Commute {
+		opts.Commute = optional.NewInt32(1)
+	}
+	detailedActivity, resp, err := apiSvc.CreateActivity(ctx, a.Name, a.Type, a.Start, a.Duration, &opts)
+	if err != nil {
+		var msg string
+		if resp != nil {
+			body, _ := ioutil.ReadAll(resp.Body)
+			msg = string(body)
+		}
+		return fmt.Errorf("%v %s", err, msg)
+	}
+	fmt.Printf("  --> https://www.strava.com/activities/%d\n", detailedActivity.Id)
+	return nil
+}
+
+func doUpdate(ctx context.Context, apiSvc *strava.ActivitiesApiService, a, prev *Activity, dryRun bool) error {
+	if err := a.VerifyForUpdate(prev); err != nil {
+		return err
+	}
+	if dryRun {
+		fmt.Printf("  Would update %v...\n", a)
+		return nil
+	}
+	fmt.Printf("  Updating %v...\n", a)
+	activityType := strava.ActivityType(a.Type)
+	update := strava.UpdatableActivity{
+		Commute: a.Commute,
+		Trainer: a.Trainer,
+		Name:    a.Name,
+		Type_:   &activityType,
+	}
+	detailedActivity, resp, err := apiSvc.UpdateActivityById(ctx, a.ID, &strava.UpdateActivityByIdOpts{Body: optional.NewInterface(update)})
+	if err != nil {
+		var msg string
+		if resp != nil {
+			body, _ := ioutil.ReadAll(resp.Body)
+			msg = string(body)
+		}
+		return fmt.Errorf("%v %s", err, msg)
+	}
+	fmt.Printf("  --> https://www.strava.com/activities/%d\n", detailedActivity.Id)
+	return nil
 }

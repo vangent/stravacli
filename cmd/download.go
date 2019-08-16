@@ -30,29 +30,15 @@ import (
 	"time"
 
 	"github.com/antihax/optional"
-	"github.com/dwj300/strava"
 	"github.com/gocarina/gocsv"
 	"github.com/spf13/cobra"
+	"github.com/vangent/strava"
 )
 
 const (
 	pageSize  = 25           // # of activities to download per page
-	dayFormat = "2006-01-02" // format for date flag
+	dayFormat = "2006-01-02" // format for date flags
 )
-
-// Activity represents a single Strava activity.
-type Activity struct {
-	ID          int64     `csv:"ID (C)"`
-	Start       time.Time `csv:"Start (C)"`
-	Type        string    `csv:"Type (CE)"`
-	Name        string    `csv:"Name (CE)"`
-	Description string    `csv:"Description (C)"`
-	Duration    int32     `csv:"Duration (seconds) (C)"`
-	Distance    float32   `csv:"Distance (C)"`
-	Private     bool      `csv:"Private? ()"`
-	Commute     bool      `csv:"Commute? (CE)"`
-	Trainer     bool      `csv:"Trainer? (CE)"`
-}
 
 func init() { //
 	var accessToken string

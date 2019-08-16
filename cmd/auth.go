@@ -104,6 +104,7 @@ func auth(clientID, clientSecret string, port int, readOnly bool) error {
 	if err := open.Start(urlstr); err != nil {
 		return err
 	}
+
 	// Wait for the redirect.
 	res := <-ch
 	if res.err != nil {
