@@ -27,8 +27,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 
 	"github.com/antihax/optional"
+	"github.com/gocarina/gocsv"
 	"github.com/spf13/cobra"
 	"github.com/vangent/strava"
 )
@@ -58,38 +60,53 @@ func init() {
 	rootCmd.AddCommand(updateCmd)
 }
 
+func loadUpdatableActivitiesFromCSV(filename string) ([]*updatableActivity, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open %q: %v", filename, err)
+	}
+	defer f.Close()
+	var activities []*updatableActivity
+	if err := gocsv.UnmarshalFile(f, &activities); err != nil {
+		return nil, fmt.Errorf("failed to parse %q: %v", filename, err)
+	}
+	return activities, nil
+}
+
 func doUpdate(accessToken, origFile, updatedFile string, dryRun bool) error {
-	var orig map[int64]*Activity
-	activities, err := loadCSV(origFile)
+	activities, err := loadUpdatableActivitiesFromCSV(origFile)
 	if err != nil {
 		return err
 	}
-	orig = map[int64]*Activity{}
+	orig := map[int64]*updatableActivity{}
 	for _, a := range activities {
 		orig[a.ID] = a
 	}
 
-	activities, err = loadCSV(updatedFile)
+	activities, err = loadUpdatableActivitiesFromCSV(updatedFile)
 	if err != nil {
 		return err
 	}
 
+	if len(activities) != len(orig) {
+		return fmt.Errorf("%q has %d activities, but %q has %d; for update, they should be the same", origFile, len(orig), updatedFile, len(activities))
+	}
 	ctx := context.WithValue(context.Background(), strava.ContextAccessToken, accessToken)
 	apiSvc := strava.NewAPIClient(strava.NewConfiguration()).ActivitiesApi
 
-	fmt.Printf("Found %d activities in %q and %d activities in %q.\n", len(activities), updatedFile, len(orig), origFile)
+	fmt.Printf("Found %d activities....\n", len(activities))
 	nUpdates := 0
 	for i, a := range activities {
 		prev := orig[a.ID]
 		if prev == nil {
-			return fmt.Errorf("activity ID %d from %q isn't present in %q", a.ID, updatedFile, origFile)
+			return fmt.Errorf("activity ID %d from %q not found in %q", a.ID, updatedFile, origFile)
 		}
 		if *prev == *a {
 			log.Printf("no change for ID %d", a.ID)
 			continue
 		}
 		if err := updateOne(ctx, apiSvc, a, prev, dryRun); err != nil {
-			return fmt.Errorf("failed to update activity %v near line %d: %v", a, i+1, err)
+			return fmt.Errorf("failed to update activity %v on line %d: %v", a, i+1, err)
 		}
 		nUpdates++
 	}
@@ -101,8 +118,8 @@ func doUpdate(accessToken, origFile, updatedFile string, dryRun bool) error {
 	return nil
 }
 
-func updateOne(ctx context.Context, apiSvc *strava.ActivitiesApiService, a, prev *Activity, dryRun bool) error {
-	if err := a.VerifyForUpdate(prev); err != nil {
+func updateOne(ctx context.Context, apiSvc *strava.ActivitiesApiService, a, prev *updatableActivity, dryRun bool) error {
+	if err := a.Verify(prev); err != nil {
 		return err
 	}
 	if dryRun {

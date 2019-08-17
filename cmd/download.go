@@ -24,10 +24,14 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
+	"os"
 	"time"
 
 	"github.com/antihax/optional"
+	"github.com/gocarina/gocsv"
 	"github.com/spf13/cobra"
 	"github.com/vangent/strava"
 )
@@ -45,7 +49,7 @@ func init() { //
 
 	downloadCmd := &cobra.Command{
 		Use:   "download",
-		Short: "Download Strava activites",
+		Short: "Download Strava activites for update.",
 		Long:  `Download Strava activites.`,
 		Args:  cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
@@ -73,13 +77,38 @@ func init() { //
 	rootCmd.AddCommand(downloadCmd)
 }
 
+// updatableActivity represents a single Strava activity to be updated.
+type updatableActivity struct {
+	// Read-only fields.
+	ID    int64     `csv:"ID"`
+	Start time.Time `csv:"Start"`
+
+	// Editable fields.
+	Type    string `csv:"Type"`
+	Name    string `csv:"Name"`
+	Commute bool   `csv:"Commute?"`
+	Trainer bool   `csv:"Trainer?"`
+}
+
+func (a *updatableActivity) String() string {
+	return fmt.Sprintf("[%s on %s (ID %d)]", a.Name, a.Start.Format(dayFormat), a.ID)
+}
+
+// Verify checks to see that a looks like it can be uploaded as an update to prev.
+func (a *updatableActivity) Verify(prev *updatableActivity) error {
+	if !a.Start.Equal(prev.Start) {
+		return errors.New("sorry, can't modify Start")
+	}
+	return nil
+}
+
 func doDownload(accessToken, outFile string, maxActivities int, before, after time.Time) error {
 	ctx := context.WithValue(context.Background(), strava.ContextAccessToken, accessToken)
 	cfg := strava.NewConfiguration()
 	client := strava.NewAPIClient(cfg)
 
 	page := int32(1)
-	var activities []*Activity
+	var activities []*updatableActivity
 
 PageLoop:
 	for {
@@ -98,18 +127,7 @@ PageLoop:
 			return fmt.Errorf("failed ListActivities call (page %d, per page %d)", page, pageSize)
 		}
 		for _, a := range summaries {
-			activity := &Activity{
-				ID:          a.Id,
-				Start:       a.StartDate,
-				Type:        string(*a.Type_),
-				Name:        a.Name,
-				Description: "", // not included in ActivitySummary
-				Duration:    a.ElapsedTime,
-				Distance:    a.Distance,
-				Private:     a.Private,
-				Commute:     a.Commute,
-				Trainer:     a.Trainer,
-			}
+			activity := &updatableActivity{a.Id, a.StartDate, string(*a.Type_), a.Name, a.Commute, a.Trainer}
 			activities = append(activities, activity)
 			if maxActivities != -1 && len(activities) == maxActivities {
 				break PageLoop
@@ -123,4 +141,24 @@ PageLoop:
 	}
 	fmt.Printf("Downloaded %d activities.\n", len(activities))
 	return writeCSV(outFile, activities)
+}
+
+func writeCSV(filename string, activities []*updatableActivity) error {
+	var w io.Writer
+	if filename == "" {
+		w = os.Stdout
+	} else {
+		f, err := os.Create(filename)
+		if err != nil {
+			return fmt.Errorf("failed to open output file %q: %v", filename, err)
+		}
+		defer f.Close()
+		w = f
+	}
+	csv, err := gocsv.MarshalString(activities)
+	if err != nil {
+		return fmt.Errorf("failed to generate .csv: %v", err)
+	}
+	fmt.Fprintf(w, csv)
+	return nil
 }

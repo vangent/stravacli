@@ -24,46 +24,74 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"time"
 
 	"github.com/antihax/optional"
+	"github.com/gocarina/gocsv"
 	"github.com/spf13/cobra"
 	"github.com/vangent/strava"
 )
 
+// TODO: Save state for partial success for uploadmanual and update.
+
 func init() {
 	var accessToken string
 	var inFile string
-	var outFile string
 	var dryRun bool
 
-	createCmd := &cobra.Command{
-		Use:   "create",
-		Short: "Upload new Strava activites",
-		Long:  `Upload new Strava activites.`,
+	uploadManualCmd := &cobra.Command{
+		Use:   "uploadmanual",
+		Short: "Upload new manual Strava activites",
+		Long:  `Upload new manual Strava activites.`,
 		Args:  cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return doCreate(accessToken, inFile, outFile, dryRun)
+			return doUploadManual(accessToken, inFile, dryRun)
 		},
 	}
-	createCmd.Flags().StringVarP(&accessToken, "access_token", "t", "", "Strava access token; use the auth command to get one")
-	createCmd.MarkFlagRequired("access_token")
-	createCmd.Flags().StringVar(&inFile, "in", "", ".csv with activities to upload")
-	createCmd.MarkFlagRequired("in")
-	createCmd.Flags().StringVar(&outFile, "out", "", ".csv with IDs filled in for succesful uploads")
-	createCmd.Flags().BoolVar(&dryRun, "dryrun", false, "do a dry run: print out proposed changes")
-	rootCmd.AddCommand(createCmd)
+	uploadManualCmd.Flags().StringVarP(&accessToken, "access_token", "t", "", "Strava access token; use the auth command to get one")
+	uploadManualCmd.MarkFlagRequired("access_token")
+	uploadManualCmd.Flags().StringVar(&inFile, "in", "", ".csv with activities to upload")
+	uploadManualCmd.MarkFlagRequired("in")
+	uploadManualCmd.Flags().BoolVar(&dryRun, "dryrun", false, "do a dry run: print out proposed changes")
+	rootCmd.AddCommand(uploadManualCmd)
 }
 
-func doCreate(accessToken, inFile, outFile string, dryRun bool) error {
-	activities, err := loadCSV(inFile)
+type manualActivity struct {
+	Start       time.Time `csv:"Start"`
+	Type        string    `csv:"Type"`
+	Name        string    `csv:"Name"`
+	Description string    `csv:"Description"`
+	Duration    int32     `csv:"Duration (seconds)"`
+	Distance    float32   `csv:"Distance"`
+	Commute     bool      `csv:"Commute?"`
+	Trainer     bool      `csv:"Trainer?"`
+}
+
+func (a *manualActivity) String() string {
+	return fmt.Sprintf("[%s on %s]", a.Name, a.Start.Format(dayFormat))
+}
+
+// Verify checks to see that a looks like it can be uploaded.
+func (a *manualActivity) Verify() error {
+	if a.Start.IsZero() {
+		return errors.New("missing Start")
+	}
+	if a.Name == "" {
+		return errors.New("missing Name")
+	}
+	return nil
+}
+
+func doUploadManual(accessToken, inFile string, dryRun bool) error {
+
+	activities, err := loadManualActivitiesFromCSV(inFile)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		writeCSV(outFile, activities)
-	}()
 
 	ctx := context.WithValue(context.Background(), strava.ContextAccessToken, accessToken)
 	apiSvc := strava.NewAPIClient(strava.NewConfiguration()).ActivitiesApi
@@ -71,11 +99,7 @@ func doCreate(accessToken, inFile, outFile string, dryRun bool) error {
 	fmt.Printf("Found %d activities in %q to upload.\n", len(activities), inFile)
 	nCreates := 0
 	for i, a := range activities {
-		if a.ID != 0 {
-			fmt.Printf("activity %d near line %d has already been uploaded, skipping\n", a.ID, i+1)
-			continue
-		}
-		if err := createOne(ctx, apiSvc, a, dryRun); err != nil {
+		if err := uploadManualOne(ctx, apiSvc, a, dryRun); err != nil {
 			return fmt.Errorf("failed to create activity %v near line %d: %v", a, i+1, err)
 		}
 		nCreates++
@@ -88,8 +112,21 @@ func doCreate(accessToken, inFile, outFile string, dryRun bool) error {
 	return nil
 }
 
-func createOne(ctx context.Context, apiSvc *strava.ActivitiesApiService, a *Activity, dryRun bool) error {
-	if err := a.VerifyForCreate(); err != nil {
+func loadManualActivitiesFromCSV(filename string) ([]*manualActivity, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open %q: %v", filename, err)
+	}
+	defer f.Close()
+	var activities []*manualActivity
+	if err := gocsv.UnmarshalFile(f, &activities); err != nil {
+		return nil, fmt.Errorf("failed to parse %q: %v", filename, err)
+	}
+	return activities, nil
+}
+
+func uploadManualOne(ctx context.Context, apiSvc *strava.ActivitiesApiService, a *manualActivity, dryRun bool) error {
+	if err := a.Verify(); err != nil {
 		return err
 	}
 	if dryRun {
@@ -120,6 +157,5 @@ func createOne(ctx context.Context, apiSvc *strava.ActivitiesApiService, a *Acti
 		return fmt.Errorf("%v %s", err, msg)
 	}
 	fmt.Printf("  --> https://www.strava.com/activities/%d\n", detailedActivity.Id)
-	a.ID = detailedActivity.Id
 	return nil
 }
