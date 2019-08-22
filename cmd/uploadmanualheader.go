@@ -29,8 +29,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// TODO: Save state for partial success for uploadmanual and update.
-
 func init() {
 	uploadManualHeaderCmd := &cobra.Command{
 		Use:   "uploadmanualheader",
