@@ -52,7 +52,7 @@ func init() { //
 		Short: "Download Strava activities for later \"update\".",
 		Long: `Download Strava activities.
 
-See https://github.com/vangent/stravacli/#bulk-update-existing-activities
+See https://github.com/vangent/stravacli/#update-existing-activities
 for detailed instructions.`,
 		Args: cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {

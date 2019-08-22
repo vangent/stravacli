@@ -46,7 +46,7 @@ func init() {
 		Short: "Upload new manual Strava activities",
 		Long: `Upload new manual Strava activities.
 
-See https://github.com/vangent/stravacli#bulk-upload-manual-activities
+See https://github.com/vangent/stravacli#upload-manual-activities
 for detailed instructions.`,
 		Args: cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
@@ -62,14 +62,14 @@ for detailed instructions.`,
 }
 
 type manualActivity struct {
-	Start       time.Time `csv:"Start"`
-	Type        string    `csv:"Type"`
-	Name        string    `csv:"Name"`
-	Description string    `csv:"Description"`
-	Duration    int32     `csv:"Duration (seconds)"`
-	Distance    float32   `csv:"Distance"`
-	Commute     bool      `csv:"Commute?"`
-	Trainer     bool      `csv:"Trainer?"`
+	Start        time.Time `csv:"Start"`
+	ActivityType string    `csv:"Activity Type"`
+	Name         string    `csv:"Name"`
+	Description  string    `csv:"Description"`
+	Duration     int32     `csv:"Duration (seconds)"`
+	Distance     float32   `csv:"Distance"`
+	Commute      bool      `csv:"Commute?"`
+	Trainer      bool      `csv:"Trainer?"`
 }
 
 func (a *manualActivity) String() string {
@@ -97,18 +97,18 @@ func doUploadManual(accessToken, inFile string, dryRun bool) error {
 	ctx := context.WithValue(context.Background(), strava.ContextAccessToken, accessToken)
 	apiSvc := strava.NewAPIClient(strava.NewConfiguration()).ActivitiesApi
 
-	fmt.Printf("Found %d activities in %q to upload.\n", len(activities), inFile)
-	nCreates := 0
+	fmt.Printf("Found %d manual activities in %q to upload.\n", len(activities), inFile)
+	nUploads := 0
 	for i, a := range activities {
 		if err := uploadManualOne(ctx, apiSvc, a, dryRun); err != nil {
-			return fmt.Errorf("failed to create activity %v near line %d: %v", a, i+1, err)
+			return fmt.Errorf("failed to upload manual activity %v near line %d: %v", a, i+1, err)
 		}
-		nCreates++
+		nUploads++
 	}
 	if dryRun {
-		fmt.Printf("Found %d activities to be created.\n", nCreates)
+		fmt.Printf("Found %d manual activities to be uploaded.\n", nUploads)
 	} else {
-		fmt.Printf("Created %d activities.\n", nCreates)
+		fmt.Printf("Uploaded %d manual activities.\n", nUploads)
 	}
 	return nil
 }
@@ -131,10 +131,10 @@ func uploadManualOne(ctx context.Context, apiSvc *strava.ActivitiesApiService, a
 		return err
 	}
 	if dryRun {
-		fmt.Printf("  Would create %v...\n", a)
+		fmt.Printf("  Would upload %v...\n", a)
 		return nil
 	}
-	fmt.Printf("  Creating %v...\n", a)
+	fmt.Printf("  Uploading %v...\n", a)
 	opts := strava.CreateActivityOpts{}
 	if a.Description != "" {
 		opts.Description = optional.NewString(a.Description)
@@ -148,7 +148,7 @@ func uploadManualOne(ctx context.Context, apiSvc *strava.ActivitiesApiService, a
 	if a.Commute {
 		opts.Commute = optional.NewInt32(1)
 	}
-	detailedActivity, resp, err := apiSvc.CreateActivity(ctx, a.Name, a.Type, a.Start, a.Duration, &opts)
+	detailedActivity, resp, err := apiSvc.CreateActivity(ctx, a.Name, a.ActivityType, a.Start, a.Duration, &opts)
 	if err != nil {
 		var msg string
 		if resp != nil {

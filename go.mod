@@ -9,3 +9,5 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/vangent/strava v0.0.0-20190816224241-8316f9518e92
 )
+
+replace github.com/vangent/strava => ../strava

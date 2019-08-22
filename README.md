@@ -2,11 +2,9 @@
 
 A command-line tool for working with Strava activities.
 
-*   Download your activities as a .CSV file using the `download` command, open
-    it in a spreadsheet application of your choice, make changes, export back to
-    .CSV, and then bulk-upload any changes you made using the `update` command.
-*   Create a .CSV file to bulk-upload manual activities using the 'uploadmanual`
-    command.
+*   Bulk upload activities, including manual activities, from a `.csv` file.
+*   Bulk edit existing your activities by downloading a `.csv` file and editing
+    it in an editor or spreadsheet application, then uploading the changes.
 
 ## Instructions
 
@@ -59,7 +57,7 @@ with other `stravacli` commands.
 
 You may have to repeat this step periodically if your access token expires.
 
-### Bulk Update Existing Activities
+### Update Existing Activities
 
 To bulk update existing Strava activities, first download them:
 
@@ -84,7 +82,7 @@ choose `File -> Download -> Comma-separated values`. Make sure not to clobber
 the original `.csv`. The instructions below assume you name the file
 `updated.csv`.
 
-Finally, use `stravacli` to apply the changes. You can use `--dryRun` to see
+Finally, use `stravacli` to apply the changes. You can use `--dryrun` to see
 what changes it would make without actually making them.
 
 ```bash
@@ -93,9 +91,34 @@ stravacli update  --access_token <YOUR_ACCESS_TOKEN> --orig=orig.csv --updated u
 
 See `stravacli update help` for more detailed help on available flags.
 
-### Bulk Upload Manual Activities
+### Upload Activities
 
-To bulk upload a bunch of manual activities, first get the required header:
+See the next section for Manual Activities; this section is for activities with
+an associated `.gpx` or similar file. To bulk upload activities,
+first get the required header:
+
+```bash
+stravacli uploadheader
+```
+
+Copy/paste that as `csv` data into a spreadsheet application of your choice; see
+the previous section for more help on that. Add rows for the manual activities
+you'd like to create, and then export the data as a `.csv` file (again, see
+above for more help on that). The instructions below assume you name the file
+`activities.md`.
+
+Finally, use `stravacli` to upload. You can use `--dryrun` to see what changes
+it would make without actually making them.
+
+```bash
+stravacli upload  --access_token <YOUR_ACCESS_TOKEN> --in=activities.csv
+```
+
+See `stravacli upload help` for more detailed help on available flags.
+
+### Upload Manual Activities
+
+To bulk upload manual activities, first get the required header:
 
 ```bash
 stravacli uploadmanualheader
@@ -107,7 +130,7 @@ you'd like to create, and then export the data as a `.csv` file (again, see
 above for more help on that). The instructions below assume you name the file
 `activities.md`.
 
-Finally, use `stravacli` to upload. You can use `--dryRun` to see what changes
+Finally, use `stravacli` to upload. You can use `--dryrun` to see what changes
 it would make without actually making them.
 
 ```bash
