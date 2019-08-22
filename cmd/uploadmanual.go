@@ -36,8 +36,6 @@ import (
 	"github.com/vangent/strava"
 )
 
-// TODO: Save state for partial success for uploadmanual and update.
-
 func init() {
 	var accessToken string
 	var inFile string
