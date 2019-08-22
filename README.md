@@ -99,7 +99,6 @@ To bulk upload a bunch of manual activities, first get the required header:
 
 ```bash
 stravacli uploadmanualheader
-Start,Type,Name,Description,Duration (seconds),Distance,Commute?,Trainer?
 ```
 
 Copy/paste that as `csv` data into a spreadsheet application of your choice; see
