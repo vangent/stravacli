@@ -49,9 +49,11 @@ func init() { //
 
 	downloadCmd := &cobra.Command{
 		Use:   "download",
-		Short: "Download Strava activites for update.",
-		Long:  `Download Strava activites.`,
-		Args:  cobra.NoArgs,
+		Short: "Download Strava activities for later \"update\".",
+		Long: `Download Strava activities.
+
+See https://github.com/vangent/stravacli#BulkUpdate for detailed instructions.`,
+		Args: cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			var before, after time.Time
 			var err error
@@ -140,10 +142,10 @@ PageLoop:
 		page++
 	}
 	fmt.Printf("Downloaded %d activities.\n", len(activities))
-	return writeCSV(outFile, activities)
+	return downloadWriteCSV(outFile, activities)
 }
 
-func writeCSV(filename string, activities []*updatableActivity) error {
+func downloadWriteCSV(filename string, activities []*updatableActivity) error {
 	var w io.Writer
 	if filename == "" {
 		w = os.Stdout

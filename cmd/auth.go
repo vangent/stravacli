@@ -43,8 +43,9 @@ func init() {
 	authCmd := &cobra.Command{
 		Use:   "auth",
 		Short: "Get a Strava access token",
-		Long:  `Get a Strava access token.`,
-		Args:  cobra.NoArgs,
+		Long: `Get a Strava access token. See https://github.com/vangent/stravacli
+for detailed instructions.`,
+		Args: cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			return doAuth(clientID, clientSecret, port, readOnly)
 		},

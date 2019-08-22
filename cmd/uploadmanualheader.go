@@ -24,39 +24,32 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
-	"log"
-	"os"
 
+	"github.com/gocarina/gocsv"
 	"github.com/spf13/cobra"
 )
 
-// rootCmd represents the base command when called without any subcommands.
-var rootCmd = &cobra.Command{
-	Use:           "stravacli",
-	Short:         "A command-line tool for working with Strava activities",
-	Long:          `A command-line tool for working with Strava activities.`,
-	SilenceUsage:  true,
-	SilenceErrors: true,
+// TODO: Save state for partial success for uploadmanual and update.
+
+func init() {
+	uploadManualHeaderCmd := &cobra.Command{
+		Use:   "uploadmanualheader",
+		Short: "Print out the required header for the .csv file for uploadmanual",
+		Long:  `Print out the required header for the .csv file for uploadmanual.`,
+		Args:  cobra.NoArgs,
+		RunE: func(_ *cobra.Command, _ []string) error {
+			return doUploadManualHeader()
+		},
+	}
+	rootCmd.AddCommand(uploadManualHeaderCmd)
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	log.SetOutput(ioutil.Discard)
-
-	var debug bool
-	cobra.OnInitialize(func() {
-		if debug {
-			log.SetOutput(os.Stderr)
-			log.SetPrefix("DEBUG: ")
-			log.SetFlags(0)
-			return
-		}
-	})
-	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "enable verbose debug logging")
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+func doUploadManualHeader() error {
+	var noActivities []*manualActivity
+	csv, err := gocsv.MarshalString(noActivities)
+	if err != nil {
+		return fmt.Errorf("failed to generate .csv: %v", err)
 	}
+	fmt.Printf(csv)
+	return nil
 }

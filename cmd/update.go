@@ -43,9 +43,11 @@ func init() {
 
 	updateCmd := &cobra.Command{
 		Use:   "update",
-		Short: "Upload modified Strava activites",
-		Long:  `Upload modified Strava activites.`,
-		Args:  cobra.NoArgs,
+		Short: "Upload modified Strava activities",
+		Long: `Upload modified Strava activities.
+
+See https://github.com/vangent/stravacli#BulkUpdate for detailed instructions.`,
+		Args: cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			return doUpdate(accessToken, origFile, updatedFile, dryRun)
 		},
