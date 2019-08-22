@@ -94,8 +94,8 @@ See `stravacli update help` for more detailed help on available flags.
 ### Upload Activities
 
 See the next section for Manual Activities; this section is for activities with
-an associated `.gpx` or similar file. To bulk upload activities,
-first get the required header:
+an associated `.gpx` or similar file. To bulk upload activities, first get the
+required header:
 
 ```bash
 stravacli uploadheader
