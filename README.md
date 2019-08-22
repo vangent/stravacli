@@ -59,7 +59,7 @@ with other `stravacli` commands.
 
 You may have to repeat this step periodically if your access token expires.
 
-### Bulk Updates
+### Bulk Update Existing Activities
 
 To bulk update existing Strava activities, first download them:
 

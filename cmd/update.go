@@ -46,7 +46,8 @@ func init() {
 		Short: "Upload modified Strava activities",
 		Long: `Upload modified Strava activities.
 
-See https://github.com/vangent/stravacli#BulkUpdate for detailed instructions.`,
+See https://github.com/vangent/stravacli/#bulk-update-existing-activities
+for detailed instructions.`,
 		Args: cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			return doUpdate(accessToken, origFile, updatedFile, dryRun)

@@ -48,7 +48,8 @@ func init() {
 		Short: "Upload new manual Strava activities",
 		Long: `Upload new manual Strava activities.
 
-See https://github.com/vangent/stravacli#UploadManual for detailed instructions.`,
+See https://github.com/vangent/stravacli#bulk-upload-manual-activities
+for detailed instructions.`,
 		Args: cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			return doUploadManual(accessToken, inFile, dryRun)
