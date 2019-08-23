@@ -77,23 +77,78 @@ func (a *uploadActivity) String() string {
 	return fmt.Sprintf("[%s from %s]", a.Name, a.Filename)
 }
 
+var validActivityType = map[string]bool{
+	"AlpineSki":       true,
+	"BackcountrySki":  true,
+	"Canoeing":        true,
+	"Crossfit":        true,
+	"EBikeRide":       true,
+	"Elliptical":      true,
+	"Golf":            true,
+	"Handcycle":       true,
+	"Hike":            true,
+	"IceSkate":        true,
+	"InlineSkate":     true,
+	"Kayaking":        true,
+	"Kitesurf":        true,
+	"NordicSki":       true,
+	"Ride":            true,
+	"RockClimbing":    true,
+	"RollerSki":       true,
+	"Rowing":          true,
+	"Run":             true,
+	"Sail":            true,
+	"Skateboard":      true,
+	"Snowboard":       true,
+	"Snowshoe":        true,
+	"Soccer":          true,
+	"StairStepper":    true,
+	"StandUpPaddling": true,
+	"Surfing":         true,
+	"Swim":            true,
+	"Velomobile":      true,
+	"VirtualRide":     true,
+	"VirtualRun":      true,
+	"Walk":            true,
+	"WeightTraining":  true,
+	"Wheelchair":      true,
+	"Windsurf":        true,
+	"Workout":         true,
+	"Yoga":            true,
+}
+
+var validFileType = map[string]bool{
+	"fit":    true,
+	"fit.gz": true,
+	"tcx":    true,
+	"tcx.gz": true,
+	"gpx":    true,
+	"gpx.gz": true,
+}
+
 // Verify checks to see that a looks like it can be uploaded.
 func (a *uploadActivity) Verify() error {
-	if a.Name == "" {
-		return errors.New("missing Name")
-	}
 	if a.ActivityType == "" {
 		return errors.New("missing Activity Type")
 	}
-	// TODO: Verify the legal values of the Type enum.
+	if !validActivityType[a.ActivityType] {
+		return fmt.Errorf("invalid Activity Type %q", a.ActivityType)
+	}
+	if a.Name == "" {
+		return errors.New("missing Name")
+	}
 	if a.FileType == "" {
 		return errors.New("missing File Type")
 	}
-	// TODO: Verify the legal values of the FileType enum.
+	if !validFileType[a.FileType] {
+		return fmt.Errorf("invalid File Type %q", a.FileType)
+	}
 	if a.Filename == "" {
 		return errors.New("missing Filename")
 	}
-	// TODO: Verify file exists.
+	if _, err := os.Stat(a.Filename); os.IsNotExist(err) {
+		return fmt.Errorf("Filename %q not found", a.Filename)
+	}
 	return nil
 }
 

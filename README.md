@@ -66,24 +66,20 @@ stravacli download --access_token <YOUR_ACCESS_TOKEN> --out orig.csv
 ```
 
 This will download your existing activities into a file called `orig.csv`, in
-[CSV format](https://en.wikipedia.org/wiki/Comma-separated_values). See
-`stravacli download help` for more detailed help on available flags.
-
-You can now open or import the `.csv` in a spreadsheet application of your
-choice. [Here](https://support.google.com/docs/answer/40608) is help on how to
-import a `.csv` into Google Sheets.
+`csv` format. See `stravacli download help` for more detailed help on available
+flags, and what the columns mean. You can now open or import the `csv` file in a
+spreadsheet application of your choice; see the bottom of the page for tips.
 
 Edit away; all of the columns are editable except for `ID` and `Start`. Sadly,
 there are a lot of fields for activities that are not editable via the Strava
-API, like `Description`.
+API.
 
-When you are done editing, export the data as a `.csv` again. For Google Sheets,
-choose `File -> Download -> Comma-separated values`. Make sure not to clobber
-the original `.csv`. The instructions below assume you name the file
-`updated.csv`.
+When you are done editing, export the data as a `.csv` file again; again, see
+the bottom of the page for tips. Make sure not to clobber the original `.csv`;
+the instructions below assume you name the file `updated.csv`.
 
 Finally, use `stravacli` to apply the changes. You can use `--dryrun` to see
-what changes it would make without actually making them.
+what changes would be made without actually making them.
 
 ```bash
 stravacli update  --access_token <YOUR_ACCESS_TOKEN> --orig=orig.csv --updated updated.csv
@@ -101,14 +97,17 @@ required header:
 stravacli uploadheader
 ```
 
-Copy/paste that as `csv` data into a spreadsheet application of your choice; see
-the previous section for more help on that. Add rows for the manual activities
-you'd like to create, and then export the data as a `.csv` file (again, see
-above for more help on that). The instructions below assume you name the file
-`activities.md`.
+See `stravacli uploadheader help` for detailed descriptions of the data columns.
+
+Copy/paste the header data into a spreadsheet application of your choice; see
+the bottom of the page for tips. Add rows for the activities you'd like to
+create.
+
+When you're done, export the data as a `.csv` file; again, see the bottom of the
+page for tips. The instructions below assume you name the file `activities.md`.
 
 Finally, use `stravacli` to upload. You can use `--dryrun` to see what changes
-it would make without actually making them.
+would be made without actually making them.
 
 ```bash
 stravacli upload  --access_token <YOUR_ACCESS_TOKEN> --in=activities.csv
@@ -124,14 +123,18 @@ To bulk upload manual activities, first get the required header:
 stravacli uploadmanualheader
 ```
 
-Copy/paste that as `csv` data into a spreadsheet application of your choice; see
-the previous section for more help on that. Add rows for the manual activities
-you'd like to create, and then export the data as a `.csv` file (again, see
-above for more help on that). The instructions below assume you name the file
-`activities.md`.
+See `stravacli uploadmanualheader help` for detailed descriptions of the data
+columns.
+
+Copy/paste the header data into a spreadsheet application of your choice; see
+the bottom of the page for tips. Add rows for the activities you'd like to
+create. Note that `Duration` is in seconds, and `Distance` is in meters!
+
+When you're done, export the data as a `.csv` file; again, see the bottom of the
+page for tips. The instructions below assume you name the file `activities.md`.
 
 Finally, use `stravacli` to upload. You can use `--dryrun` to see what changes
-it would make without actually making them.
+would be made without actually making them.
 
 ```bash
 stravacli uploadmanual  --access_token <YOUR_ACCESS_TOKEN> --in=activities.csv
@@ -143,3 +146,16 @@ See `stravacli uploadmanual help` for more detailed help on available flags.
 
 If you are done using `stravacli`, you can revoke its API access
 [here](https://www.strava.com/settings/apps).
+
+### Editing CSV Files
+
+There are lots of ways to edit
+[CSV](https://en.wikipedia.org/wiki/Comma-separated_values) data, including:
+
+*   Using an editor like `vi` or `emacs`.
+*   In a spreadsheet application like `Google Sheets` or `Microsoft Excel`.
+
+Since `Google Sheets` is free...
+[Here](https://support.google.com/docs/answer/40608) is help on how to import a
+`.csv` into Google Sheets. To export back to `.csv`, choose `File -> Download ->
+Comma-separated values`.

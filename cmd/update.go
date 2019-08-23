@@ -47,7 +47,11 @@ func init() {
 		Long: `Upload modified Strava activities.
 
 See https://github.com/vangent/stravacli/#update-existing-activities
-for detailed instructions.`,
+for detailed instructions.
+
+See "stravacli help download" for info about the data columns.
+
+`,
 		Args: cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			return doUpdate(accessToken, origFile, updatedFile, dryRun)
@@ -130,7 +134,10 @@ func updateOne(ctx context.Context, apiSvc *strava.ActivitiesApiService, a, prev
 		return nil
 	}
 	fmt.Printf("  Updating %v...\n", a)
-	activityType := strava.ActivityType(a.Type)
+	activityType := strava.ActivityType(a.ActivityType)
+	if !validActivityType[a.ActivityType] {
+		return fmt.Errorf("invalid Activity Type %q", a.ActivityType)
+	}
 	update := strava.UpdatableActivity{
 		Commute: a.Commute,
 		Trainer: a.Trainer,

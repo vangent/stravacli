@@ -33,8 +33,19 @@ func init() {
 	uploadManualHeaderCmd := &cobra.Command{
 		Use:   "uploadmanualheader",
 		Short: "Print out the required header for the .csv file for uploadmanual",
-		Long:  `Print out the required header for the .csv file for uploadmanual.`,
-		Args:  cobra.NoArgs,
+		Long: `Print out the required header for the .csv file for uploadmanual.
+
+Data Columns:
+Start: The start time. Required. The time format looks like YYYY-MM-DDTHH:mm:ssZ; for example, 2019-02-22T18:53:46Z".
+Activity Type: The activity type. Required. See the available list here: https://developers.strava.com/docs/reference/#api-models-ActivityType.
+Name: The activity name. Required. If you leave it blank, Strava will pick one for you, like "Lunch Ride".
+Description: Description of the activity.
+Duration: The elapsed time, in seconds.
+Distance: The distance, in meters.
+Commute?: "false" or "true", depending on whether this activity was for a commute. Defaults to "false".
+Trainer?: "false" or "true", depending on whether this activity used a trainer. Defaults to "false".
+`,
+		Args: cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			return doUploadManualHeader()
 		},

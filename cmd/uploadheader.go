@@ -33,8 +33,19 @@ func init() {
 	uploadHeaderCmd := &cobra.Command{
 		Use:   "uploadheader",
 		Short: "Print out the required header for the .csv file for upload",
-		Long:  `Print out the required header for the .csv file for upload.`,
-		Args:  cobra.NoArgs,
+		Long: `Print out the required header for the .csv file for upload.
+
+Data Columns:
+External ID: An external ID for the activity; OK to leave blank.
+Activity Type: The activity type. Required. See the available list here: https://developers.strava.com/docs/reference/#api-models-ActivityType.
+Name: The activity name. Required. If you leave it blank, Strava will pick one for you, like "Lunch Ride".
+Description: Description of the activity.
+Commute?: "false" or "true", depending on whether this activity was for a commute. Defaults to "false".
+Trainer?: "false" or "true", depending on whether this activity used a trainer. Defaults to "false".
+File Type: The type of data file being uploaded; one of "fit", "tcx", or "gpx"; may be suffixed with ".gz" (e.g., "gpx.gz") if the file is gzipped.
+Filename: Relative path to the data file.
+`,
+		Args: cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			return doUploadHeader()
 		},

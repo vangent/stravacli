@@ -53,7 +53,16 @@ func init() { //
 		Long: `Download Strava activities.
 
 See https://github.com/vangent/stravacli/#update-existing-activities
-for detailed instructions.`,
+for detailed instructions.
+
+Data Columns:
+ID: The Strava ID. Do not edit!
+Start: The start time. Do not edit! The time format looks like YYYY-MM-DDTHH:mm:ssZ; for example, 2019-02-22T18:53:46Z".
+Activity Type: The activity type; see the available list here: https://developers.strava.com/docs/reference/#api-models-ActivityType.
+Name: The name of the activity.
+Commute?: "false" or "true", depending on whether this activity was for a commute. Defaults to "false".
+Trainer?: "false" or "true", depending on whether this activity used a trainer. Defaults to "false".
+`,
 		Args: cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			var before, after time.Time
@@ -87,10 +96,10 @@ type updatableActivity struct {
 	Start time.Time `csv:"Start"`
 
 	// Editable fields.
-	Type    string `csv:"Type"`
-	Name    string `csv:"Name"`
-	Commute bool   `csv:"Commute?"`
-	Trainer bool   `csv:"Trainer?"`
+	ActivityType string `csv:"Activity Type"`
+	Name         string `csv:"Name"`
+	Commute      bool   `csv:"Commute?"`
+	Trainer      bool   `csv:"Trainer?"`
 }
 
 func (a *updatableActivity) String() string {

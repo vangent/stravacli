@@ -66,7 +66,7 @@ type manualActivity struct {
 	ActivityType string    `csv:"Activity Type"`
 	Name         string    `csv:"Name"`
 	Description  string    `csv:"Description"`
-	Duration     int32     `csv:"Duration (seconds)"`
+	Duration     int32     `csv:"Duration"`
 	Distance     float32   `csv:"Distance"`
 	Commute      bool      `csv:"Commute?"`
 	Trainer      bool      `csv:"Trainer?"`
@@ -80,6 +80,12 @@ func (a *manualActivity) String() string {
 func (a *manualActivity) Verify() error {
 	if a.Start.IsZero() {
 		return errors.New("missing Start")
+	}
+	if a.ActivityType == "" {
+		return errors.New("missing Activity Type")
+	}
+	if !validActivityType[a.ActivityType] {
+		return fmt.Errorf("invalid Activity Type %q", a.ActivityType)
 	}
 	if a.Name == "" {
 		return errors.New("missing Name")
