@@ -184,5 +184,5 @@ func checkPartialSuccess(row int, err error) error {
 		return err
 	}
 	// Tell the user how to restart.
-	return fmt.Errorf("%v\n\nSome rows were successfully processed, but there was an error on row %d (note: row 0 is the header row). Fix the error and rerun with '--start_row=%d' to retry, or rerun with '--start_row=%d' to skip over the bad row", err, row, row, row+1)
+	return fmt.Errorf("%v\n\nSome rows were successfully processed, but there was an error on row %d (row 0 is the header row).\nFix the error and rerun with '--start_row=%d' to retry, or rerun with '--start_row=%d' to skip over the bad row", err, row, row, row+1)
 }
