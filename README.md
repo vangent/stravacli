@@ -3,8 +3,8 @@
 A command-line tool for working with Strava activities.
 
 *   Bulk upload activities, including manual activities, from a `.csv` file.
-*   Bulk edit existing your activities by downloading a `.csv` file and editing
-    it in an editor or spreadsheet application, then uploading the changes.
+*   Bulk edit existing activities by downloading a `.csv` file and editing it in
+    an editor or spreadsheet application, then uploading the changes.
 
 ## Instructions
 
@@ -57,105 +57,96 @@ with other `stravacli` commands.
 
 You may have to repeat this step periodically if your access token expires.
 
+### CSV Files
+
+Most `stravacli` use [CSV](https://en.wikipedia.org/wiki/Comma-separated_values)
+data. There are lots of ways to edit CSV data, including:
+
+*   Using an editor like `vi` or `emacs`.
+*   In a spreadsheet application like `Google Sheets` or `Microsoft Excel`.
+
+Use Google to find out more. If you're using `Google Sheets` (it's free!),
+[here](https://support.google.com/docs/answer/40608) is help on how to import a
+`.csv` into Google Sheets. To export back to `.csv`, choose `File -> Download ->
+Comma-separated values`.
+
 ### Update Existing Activities
 
 To bulk update existing Strava activities, first download them:
 
 ```bash
-stravacli download --access_token <YOUR_ACCESS_TOKEN> --out orig.csv
+stravacli download --access_token=<YOUR_ACCESS_TOKEN> --out=orig.csv
 ```
 
-This will download your existing activities into a file called `orig.csv`, in
-`csv` format. See `stravacli download help` for more detailed help on available
-flags, and what the columns mean. You can now open or import the `csv` file in a
-spreadsheet application of your choice; see the bottom of the page for tips.
+This will download your existing activities into a [CSV file](#csv-files) file
+called `orig.csv`. See `stravacli download help` for more detailed help, and
+what the columns mean. You can now open or import the `csv` file in a
+spreadsheet application of your choice.
 
 Edit away; all of the columns are editable except for `ID` and `Start`. Sadly,
 there are a lot of fields for activities that are not editable via the Strava
 API.
 
-When you are done editing, export the data as a `.csv` file again; again, see
-the bottom of the page for tips. Make sure not to clobber the original `.csv`;
-the instructions below assume you name the file `updated.csv`.
+When you are done editing, export the data as a `.csv` file again. Make sure not
+to clobber the original `.csv`; the instructions below assume you name the file
+`updated.csv`.
 
 Finally, use `stravacli` to apply the changes. You can use `--dryrun` to see
 what changes would be made without actually making them.
 
 ```bash
-stravacli update  --access_token <YOUR_ACCESS_TOKEN> --orig=orig.csv --updated updated.csv
+stravacli update --access_token=<YOUR_ACCESS_TOKEN> --orig=orig.csv --updated=updated.csv
 ```
 
-See `stravacli update help` for more detailed help on available flags.
+See `stravacli update help` for more detailed help.
 
 ### Upload Activities
 
 See the next section for Manual Activities; this section is for activities with
-an associated `.gpx` or similar file. To bulk upload activities, first get the
-required header:
+an associated `.gpx`, `tcx`, or `.fit` file. To bulk upload activities, first
+get the required header:
 
 ```bash
-stravacli uploadheader
+stravacli uploadheader > activities.csv
 ```
 
 See `stravacli uploadheader help` for detailed descriptions of the data columns.
 
-Copy/paste the header data into a spreadsheet application of your choice; see
-the bottom of the page for tips. Add rows for the activities you'd like to
-create.
-
-When you're done, export the data as a `.csv` file; again, see the bottom of the
-page for tips. The instructions below assume you name the file `activities.md`.
+Add rows to the [CSV file](#csv-files) for the activities you'd like to create.
 
 Finally, use `stravacli` to upload. You can use `--dryrun` to see what changes
 would be made without actually making them.
 
 ```bash
-stravacli upload  --access_token <YOUR_ACCESS_TOKEN> --in=activities.csv
+stravacli upload --access_token=<YOUR_ACCESS_TOKEN> --in=activities.csv
 ```
 
-See `stravacli upload help` for more detailed help on available flags.
+See `stravacli upload help` for more detailed help.
 
 ### Upload Manual Activities
 
 To bulk upload manual activities, first get the required header:
 
 ```bash
-stravacli uploadmanualheader
+stravacli uploadmanualheader > activities.csv
 ```
 
 See `stravacli uploadmanualheader help` for detailed descriptions of the data
 columns.
 
-Copy/paste the header data into a spreadsheet application of your choice; see
-the bottom of the page for tips. Add rows for the activities you'd like to
-create. Note that `Duration` is in seconds, and `Distance` is in meters!
-
-When you're done, export the data as a `.csv` file; again, see the bottom of the
-page for tips. The instructions below assume you name the file `activities.md`.
+Add rows to the [CSV file](#csv-files) for the activities you'd like to create.
+Note that `Duration` is in seconds, and `Distance` is in meters!
 
 Finally, use `stravacli` to upload. You can use `--dryrun` to see what changes
 would be made without actually making them.
 
 ```bash
-stravacli uploadmanual  --access_token <YOUR_ACCESS_TOKEN> --in=activities.csv
+stravacli uploadmanual --access_token=<YOUR_ACCESS_TOKEN> --in=activities.csv
 ```
 
-See `stravacli uploadmanual help` for more detailed help on available flags.
+See `stravacli uploadmanual help` for more detailed help.
 
 ### Cleanup
 
 If you are done using `stravacli`, you can revoke its API access
 [here](https://www.strava.com/settings/apps).
-
-### Editing CSV Files
-
-There are lots of ways to edit
-[CSV](https://en.wikipedia.org/wiki/Comma-separated_values) data, including:
-
-*   Using an editor like `vi` or `emacs`.
-*   In a spreadsheet application like `Google Sheets` or `Microsoft Excel`.
-
-Since `Google Sheets` is free...
-[Here](https://support.google.com/docs/answer/40608) is help on how to import a
-`.csv` into Google Sheets. To export back to `.csv`, choose `File -> Download ->
-Comma-separated values`.
