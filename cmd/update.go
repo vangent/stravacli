@@ -39,6 +39,7 @@ func init() {
 	var accessToken string
 	var origFile string
 	var updatedFile string
+	var startRow int
 	var dryRun bool
 
 	updateCmd := &cobra.Command{
@@ -54,7 +55,7 @@ See "stravacli help download" for info about the data columns.
 `,
 		Args: cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return doUpdate(accessToken, origFile, updatedFile, dryRun)
+			return checkPartialSuccess(doUpdate(accessToken, origFile, updatedFile, startRow, dryRun))
 		},
 	}
 	updateCmd.Flags().StringVarP(&accessToken, "access_token", "t", "", "Strava access token; use the auth command to get one")
@@ -63,6 +64,7 @@ See "stravacli help download" for info about the data columns.
 	updateCmd.MarkFlagRequired("orig")
 	updateCmd.Flags().StringVar(&updatedFile, "updated", "", ".csv with modifications")
 	updateCmd.MarkFlagRequired("updated")
+	updateCmd.Flags().IntVar(&startRow, "start_row", 1, "skip rows in the input up to this row (row 0 is the header row)")
 	updateCmd.Flags().BoolVar(&dryRun, "dryrun", false, "do a dry run: print out proposed changes")
 	rootCmd.AddCommand(updateCmd)
 }
@@ -80,10 +82,10 @@ func loadUpdatableActivitiesFromCSV(filename string) ([]*updatableActivity, erro
 	return activities, nil
 }
 
-func doUpdate(accessToken, origFile, updatedFile string, dryRun bool) error {
+func doUpdate(accessToken, origFile, updatedFile string, startRow int, dryRun bool) (int, error) {
 	activities, err := loadUpdatableActivitiesFromCSV(origFile)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	orig := map[int64]*updatableActivity{}
 	for _, a := range activities {
@@ -92,37 +94,41 @@ func doUpdate(accessToken, origFile, updatedFile string, dryRun bool) error {
 
 	activities, err = loadUpdatableActivitiesFromCSV(updatedFile)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	if len(activities) != len(orig) {
-		return fmt.Errorf("%q has %d activities, but %q has %d; for update, they should be the same", origFile, len(orig), updatedFile, len(activities))
+		return 0, fmt.Errorf("%q has %d activities, but %q has %d; for update, they should be the same", origFile, len(orig), updatedFile, len(activities))
 	}
 	ctx := context.WithValue(context.Background(), strava.ContextAccessToken, accessToken)
 	apiSvc := strava.NewAPIClient(strava.NewConfiguration()).ActivitiesApi
 
-	fmt.Printf("Found %d activities....\n", len(activities))
-	nUpdates := 0
+	fmt.Printf("Found %d activities%s....\n", len(activities), startRowMessage(len(activities), startRow))
+	n := 0
 	for i, a := range activities {
+		row := i + 1 // row 0 is the header row
+		if row < startRow {
+			continue
+		}
 		prev := orig[a.ID]
 		if prev == nil {
-			return fmt.Errorf("activity ID %d from %q not found in %q", a.ID, updatedFile, origFile)
+			return row, fmt.Errorf("activity ID %d from %q not found in %q", a.ID, updatedFile, origFile)
 		}
 		if *prev == *a {
 			log.Printf("no change for ID %d", a.ID)
 			continue
 		}
 		if err := updateOne(ctx, apiSvc, a, prev, dryRun); err != nil {
-			return fmt.Errorf("failed to update activity %v on line %d: %v", a, i+1, err)
+			return row, fmt.Errorf("failed to update activity %v: %v", a, err)
 		}
-		nUpdates++
+		n++
 	}
 	if dryRun {
-		fmt.Printf("Found %d activities to be updated.\n", nUpdates)
+		fmt.Printf("Found %d activities to be updated.\n", n)
 	} else {
-		fmt.Printf("Updated %d activities.\n", nUpdates)
+		fmt.Printf("Updated %d activities.\n", n)
 	}
-	return nil
+	return 0, nil
 }
 
 func updateOne(ctx context.Context, apiSvc *strava.ActivitiesApiService, a, prev *updatableActivity, dryRun bool) error {
@@ -155,4 +161,28 @@ func updateOne(ctx context.Context, apiSvc *strava.ActivitiesApiService, a, prev
 	}
 	fmt.Printf("  --> https://www.strava.com/activities/%d\n", detailedActivity.Id)
 	return nil
+}
+
+func startRowMessage(n, startRow int) string {
+	if startRow <= 1 {
+		return ""
+	}
+	n = n - startRow + 1
+	if n < 0 {
+		n = 0
+	}
+	return fmt.Sprintf(", %d after starting on row %d", n, startRow)
+}
+
+func checkPartialSuccess(row int, err error) error {
+	if err == nil {
+		// Success! Nothing to do.
+		return nil
+	}
+	if row <= 1 {
+		// Failed, but failed on or before the first row; nothing to do.
+		return err
+	}
+	// Tell the user how to restart.
+	return fmt.Errorf("%v\n\nSome rows were successfully processed, but there was an error on row %d (note: row 0 is the header row). Fix the error and rerun with '--start_row=%d' to retry, or rerun with '--start_row=%d' to skip over the bad row", err, row, row, row+1)
 }

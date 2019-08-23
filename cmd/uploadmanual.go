@@ -39,6 +39,7 @@ import (
 func init() {
 	var accessToken string
 	var inFile string
+	var startRow int
 	var dryRun bool
 
 	uploadManualCmd := &cobra.Command{
@@ -50,13 +51,14 @@ See https://github.com/vangent/stravacli#upload-manual-activities
 for detailed instructions.`,
 		Args: cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return doUploadManual(accessToken, inFile, dryRun)
+			return checkPartialSuccess(doUploadManual(accessToken, inFile, startRow, dryRun))
 		},
 	}
 	uploadManualCmd.Flags().StringVarP(&accessToken, "access_token", "t", "", "Strava access token; use the auth command to get one")
 	uploadManualCmd.MarkFlagRequired("access_token")
 	uploadManualCmd.Flags().StringVar(&inFile, "in", "", ".csv with activities to upload")
 	uploadManualCmd.MarkFlagRequired("in")
+	uploadManualCmd.Flags().IntVar(&startRow, "start_row", 1, "skip rows in the input up to this row (row 0 is the header row)")
 	uploadManualCmd.Flags().BoolVar(&dryRun, "dryrun", false, "do a dry run: print out proposed changes")
 	rootCmd.AddCommand(uploadManualCmd)
 }
@@ -93,30 +95,31 @@ func (a *manualActivity) Verify() error {
 	return nil
 }
 
-func doUploadManual(accessToken, inFile string, dryRun bool) error {
-
+func doUploadManual(accessToken, inFile string, startRow int, dryRun bool) (int, error) {
 	activities, err := loadManualActivitiesFromCSV(inFile)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	ctx := context.WithValue(context.Background(), strava.ContextAccessToken, accessToken)
 	apiSvc := strava.NewAPIClient(strava.NewConfiguration()).ActivitiesApi
 
-	fmt.Printf("Found %d manual activities in %q to upload.\n", len(activities), inFile)
-	nUploads := 0
+	fmt.Printf("Found %d manual activities in %q to upload%s....\n", len(activities), inFile, startRowMessage(len(activities), startRow))
+	n := 0
 	for i, a := range activities {
-		if err := uploadManualOne(ctx, apiSvc, a, dryRun); err != nil {
-			return fmt.Errorf("failed to upload manual activity %v near line %d: %v", a, i+1, err)
+		row := i + 1 // row 0 is the header row
+		if row < startRow {
+			continue
 		}
-		nUploads++
+		if err := uploadManualOne(ctx, apiSvc, a, dryRun); err != nil {
+			return row, fmt.Errorf("failed to upload manual activity %v: %v", a, err)
+		}
+		n++
 	}
-	if dryRun {
-		fmt.Printf("Found %d manual activities to be uploaded.\n", nUploads)
-	} else {
-		fmt.Printf("Uploaded %d manual activities.\n", nUploads)
+	if !dryRun {
+		fmt.Printf("Uploaded %d manual activities.\n", n)
 	}
-	return nil
+	return 0, nil
 }
 
 func loadManualActivitiesFromCSV(filename string) ([]*manualActivity, error) {

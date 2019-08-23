@@ -40,6 +40,7 @@ import (
 func init() {
 	var accessToken string
 	var inFile string
+	var startRow int
 	var dryRun bool
 
 	uploadCmd := &cobra.Command{
@@ -51,13 +52,14 @@ See https://github.com/vangent/stravacli#upload-activities
 for detailed instructions.`,
 		Args: cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return doUpload(accessToken, inFile, dryRun)
+			return checkPartialSuccess(doUpload(accessToken, inFile, startRow, dryRun))
 		},
 	}
 	uploadCmd.Flags().StringVarP(&accessToken, "access_token", "t", "", "Strava access token; use the auth command to get one")
 	uploadCmd.MarkFlagRequired("access_token")
 	uploadCmd.Flags().StringVar(&inFile, "in", "", ".csv with activities to upload")
 	uploadCmd.MarkFlagRequired("in")
+	uploadCmd.Flags().IntVar(&startRow, "start_row", 1, "skip rows in the input up to this row (row 0 is the header row)")
 	uploadCmd.Flags().BoolVar(&dryRun, "dryrun", false, "do a dry run: print out proposed changes")
 	rootCmd.AddCommand(uploadCmd)
 }
@@ -152,29 +154,31 @@ func (a *uploadActivity) Verify() error {
 	return nil
 }
 
-func doUpload(accessToken, inFile string, dryRun bool) error {
+func doUpload(accessToken, inFile string, startRow int, dryRun bool) (int, error) {
 	activities, err := loadActivitiesFromCSV(inFile)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	ctx := context.WithValue(context.Background(), strava.ContextAccessToken, accessToken)
 	uploadSvc := strava.NewAPIClient(strava.NewConfiguration()).UploadsApi
 
-	fmt.Printf("Found %d activities in %q to upload.\n", len(activities), inFile)
-	nUploads := 0
+	fmt.Printf("Found %d activities in %q to upload%s....\n", len(activities), inFile, startRowMessage(len(activities), startRow))
+	n := 0
 	for i, a := range activities {
-		if err := uploadOne(ctx, uploadSvc, a, dryRun); err != nil {
-			return fmt.Errorf("failed to upload activity %v near line %d: %v", a, i+1, err)
+		row := i + 1 // row 0 is the header row
+		if row < startRow {
+			continue
 		}
-		nUploads++
+		if err := uploadOne(ctx, uploadSvc, a, dryRun); err != nil {
+			return row, fmt.Errorf("failed to upload activity %v: %v", a, err)
+		}
+		n++
 	}
-	if dryRun {
-		fmt.Printf("Found %d activities to be uploaded.\n", nUploads)
-	} else {
-		fmt.Printf("Uploaded %d activities.\n", nUploads)
+	if !dryRun {
+		fmt.Printf("Uploaded %d activities.\n", n)
 	}
-	return nil
+	return 0, nil
 }
 
 func loadActivitiesFromCSV(filename string) ([]*uploadActivity, error) {
@@ -231,7 +235,7 @@ func uploadOne(ctx context.Context, uploadSvc *strava.UploadsApiService, a *uplo
 				body, _ := ioutil.ReadAll(resp.Body)
 				msg = string(body)
 			}
-			return fmt.Errorf("%v %v %s", err, resp, msg)
+			return fmt.Errorf("%v %s", err, msg)
 		}
 		if upload.Error_ != "" {
 			return fmt.Errorf("upload failed: %s", upload.Error_)
