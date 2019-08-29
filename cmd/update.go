@@ -145,10 +145,12 @@ func updateOne(ctx context.Context, apiSvc *strava.ActivitiesApiService, a, prev
 		return fmt.Errorf("invalid Activity Type %q", a.ActivityType)
 	}
 	update := strava.UpdatableActivity{
-		Commute: a.Commute,
-		Trainer: a.Trainer,
-		Name:    a.Name,
-		Type_:   &activityType,
+		Commute:     a.Commute,
+		Trainer:     a.Trainer,
+		Name:        a.Name,
+		WorkoutType: a.WorkoutType,
+		GearId:      a.GearID,
+		Type_:       &activityType,
 	}
 	detailedActivity, resp, err := apiSvc.UpdateActivityById(ctx, a.ID, &strava.UpdateActivityByIdOpts{Body: optional.NewInterface(update)})
 	if err != nil {
