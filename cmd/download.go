@@ -60,8 +60,8 @@ ID: The Strava ID. Do not edit!
 Start: The start time. Do not edit! The time format looks like YYYY-MM-DDTHH:mm:ssZ; for example, 2019-02-22T18:53:46Z".
 Activity Type: The activity type; see the available list here: https://developers.strava.com/docs/reference/#api-models-ActivityType.
 Name: The name of the activity.
-Commute?: "false" or "true", depending on whether this activity was for a commute. Defaults to "false".
-Trainer?: "false" or "true", depending on whether this activity used a trainer. Defaults to "false".
+Commute?: "false" or "true", depending on whether this activity was for a commute.
+Trainer?: "false" or "true", depending on whether this activity used a trainer. The Strava UI shows this differently depending on the activity type; for example, "Indoor Cycling" for Rides and "Treadmill" for Runs.
 `,
 		Args: cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
