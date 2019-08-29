@@ -60,6 +60,7 @@ ID: The Strava ID. Do not edit!
 Start: The start time. Do not edit! The time format looks like YYYY-MM-DDTHH:mm:ssZ; for example, 2019-02-22T18:53:46Z".
 Activity Type: The activity type; see the available list here: https://developers.strava.com/docs/reference/#api-models-ActivityType.
 Name: The name of the activity.
+Workout Type: The type of workout. 0=default/none. For Ride: 11=Race, 12=Workout; for Run: 1=Race, 2=Long Run, 3=Workout. You can figure out other values by setting the field to what you want in Strava, then downloading.
 Commute?: "false" or "true", depending on whether this activity was for a commute.
 Trainer?: "false" or "true", depending on whether this activity used a trainer. The Strava UI shows this differently depending on the activity type; for example, "Indoor Cycling" for Rides and "Treadmill" for Runs.
 `,
@@ -99,6 +100,7 @@ type updatableActivity struct {
 	// Editable fields.
 	ActivityType string `csv:"Activity Type"`
 	Name         string `csv:"Name"`
+	WorkoutType  int32  `csv:"Workout Type"`
 	Commute      bool   `csv:"Commute?"`
 	Trainer      bool   `csv:"Trainer?"`
 }
@@ -140,7 +142,7 @@ PageLoop:
 			return fmt.Errorf("failed ListActivities call (page %d, per page %d)", page, pageSize)
 		}
 		for _, a := range summaries {
-			activity := &updatableActivity{a.Id, a.StartDate, string(*a.Type_), a.Name, a.Commute, a.Trainer}
+			activity := &updatableActivity{a.Id, a.StartDate, string(*a.Type_), a.Name, a.WorkoutType, a.Commute, a.Trainer}
 			activities = append(activities, activity)
 			if maxActivities != -1 && len(activities) == maxActivities {
 				break PageLoop

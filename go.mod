@@ -7,5 +7,5 @@ require (
 	github.com/gocarina/gocsv v0.0.0-20190802110148-150c53a64ab6
 	github.com/skratchdot/open-golang v0.0.0-20190402232053-79abb63cd66e
 	github.com/spf13/cobra v0.0.5
-	github.com/vangent/strava v0.0.0-20190829183339-62ea79dcfe6f
+	github.com/vangent/strava v0.0.0-20190829190132-42f81a5254fd
 )
