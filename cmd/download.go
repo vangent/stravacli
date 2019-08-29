@@ -82,7 +82,8 @@ Trainer?: "false" or "true", depending on whether this activity used a trainer. 
 	}
 	downloadCmd.Flags().StringVarP(&accessToken, "access_token", "t", "", "Strava access token; use the auth command to get one")
 	downloadCmd.MarkFlagRequired("access_token")
-	downloadCmd.Flags().StringVar(&outFile, "out", "", "output filename, or leave empty to output to stdout")
+	downloadCmd.Flags().StringVar(&outFile, "out", "", "output filename")
+	downloadCmd.MarkFlagRequired("out")
 	downloadCmd.Flags().IntVar(&maxActivities, "max", 0, "maximum # of activities to download (default 0 means no limit)")
 	downloadCmd.Flags().StringVar(&beforeStr, "before", "", "only download activities before this date (YYYY-MM-DD)")
 	downloadCmd.Flags().StringVar(&afterStr, "after", "", "only download activities after this date (YYYY-MM-DD)")
