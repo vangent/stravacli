@@ -40,6 +40,7 @@ External ID: An external ID for the activity; OK to leave blank.
 Activity Type: The activity type. Required. See the available list here: https://developers.strava.com/docs/reference/#api-models-ActivityType.
 Name: The activity name. Required. If you leave it blank, Strava will pick one for you, like "Lunch Ride".
 Description: Description of the activity.
+Workout Type: The type of workout. 0=default/none. For Ride: 11=Race, 12=Workout; for Run: 1=Race, 2=Long Run, 3=Workout. You can figure out other values by setting the field to what you want in Strava, then using "download" to view it.
 Commute?: "false" or "true", depending on whether this activity was for a commute. Defaults to "false".
 Trainer?: "false" or "true", depending on whether this activity used a trainer. Defaults to "false".
 File Type: The type of data file being uploaded; one of "fit", "tcx", or "gpx"; may be suffixed with ".gz" (e.g., "gpx.gz") if the file is gzipped.

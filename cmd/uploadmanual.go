@@ -68,6 +68,7 @@ type manualActivity struct {
 	ActivityType string    `csv:"Activity Type"`
 	Name         string    `csv:"Name"`
 	Description  string    `csv:"Description"`
+	WorkoutType  int       `csv:"Workout Type"`
 	Duration     int32     `csv:"Duration"`
 	Distance     float32   `csv:"Distance"`
 	Commute      bool      `csv:"Commute?"`
@@ -157,6 +158,9 @@ func uploadManualOne(ctx context.Context, apiSvc *strava.ActivitiesApiService, a
 	if a.Commute {
 		opts.Commute = optional.NewInt32(1)
 	}
+	if a.WorkoutType != 0 {
+		opts.WorkoutType = optional.NewInt32(int32(a.WorkoutType))
+	}
 	detailedActivity, resp, err := apiSvc.CreateActivity(ctx, a.Name, a.ActivityType, a.Start, a.Duration, &opts)
 	if err != nil {
 		var msg string
@@ -166,6 +170,8 @@ func uploadManualOne(ctx context.Context, apiSvc *strava.ActivitiesApiService, a
 		}
 		return fmt.Errorf("%v %s", err, msg)
 	}
-	fmt.Printf("  --> https://www.strava.com/activities/%d\n", detailedActivity.Id)
+	if detailedActivity.Id != 0 {
+		fmt.Printf("  --> https://www.strava.com/activities/%d\n", detailedActivity.Id)
+	}
 	return nil
 }
