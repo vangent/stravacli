@@ -32,8 +32,8 @@ github.com/spf13/pflag v1.0.3/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnIn
 github.com/spf13/viper v1.3.2/go.mod h1:ZiWeW+zYFKm7srdB9IoDzzZXaJaI5eL9QjNiN/DMA2s=
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
-github.com/vangent/strava v0.0.0-20190829205731-12d2b74455c9 h1:ODllgRG+tuuijHj+OsJlbz1SpOR71wxdkY3RqOIqTkY=
-github.com/vangent/strava v0.0.0-20190829205731-12d2b74455c9/go.mod h1:1ADw/Ld2KDuIz+44+1GbOgc9Wzp4OpWxoRMbbXEv1TY=
+github.com/vangent/strava v0.0.0-20190829211933-3ae918a9fdfc h1:ZjFAO/orRTGS/NB145TgJyA6c1rPJo4aDtE7Ff5OMok=
+github.com/vangent/strava v0.0.0-20190829211933-3ae918a9fdfc/go.mod h1:1ADw/Ld2KDuIz+44+1GbOgc9Wzp4OpWxoRMbbXEv1TY=
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
 golang.org/x/crypto v0.0.0-20181203042331-505ab145d0a9/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
 golang.org/x/net v0.0.0-20180724234803-3673e40ba225/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=

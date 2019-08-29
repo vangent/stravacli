@@ -69,6 +69,7 @@ type manualActivity struct {
 	Name         string    `csv:"Name"`
 	Description  string    `csv:"Description"`
 	WorkoutType  int       `csv:"Workout Type"`
+	GearID       string    `csv:"Gear ID"`
 	Duration     int32     `csv:"Duration"`
 	Distance     float32   `csv:"Distance"`
 	Commute      bool      `csv:"Commute?"`
@@ -160,6 +161,9 @@ func uploadManualOne(ctx context.Context, apiSvc *strava.ActivitiesApiService, a
 	}
 	if a.WorkoutType != 0 {
 		opts.WorkoutType = optional.NewInt32(int32(a.WorkoutType))
+	}
+	if a.GearID != "" {
+		opts.GearId = optional.NewString(a.GearID)
 	}
 	detailedActivity, resp, err := apiSvc.CreateActivity(ctx, a.Name, a.ActivityType, a.Start, a.Duration, &opts)
 	if err != nil {

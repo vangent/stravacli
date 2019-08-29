@@ -70,6 +70,7 @@ type uploadActivity struct {
 	Name         string `csv:"Name"`
 	Description  string `csv:"Description"`
 	WorkoutType  int    `csv:"Workout Type"`
+	GearID       string `csv:"Gear ID"`
 	Commute      bool   `csv:"Commute?"`
 	Trainer      bool   `csv:"Trainer?"`
 	FileType     string `csv:"File Type"`
@@ -224,6 +225,9 @@ func uploadOne(ctx context.Context, uploadSvc *strava.UploadsApiService, a *uplo
 	}
 	if a.WorkoutType != 0 {
 		opts.WorkoutType = optional.NewInt32(int32(a.WorkoutType))
+	}
+	if a.GearID != "" {
+		opts.GearId = optional.NewString(a.GearID)
 	}
 	if a.Trainer {
 		opts.Trainer = optional.NewInt32(1)
