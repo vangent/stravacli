@@ -141,7 +141,7 @@ PageLoop:
 		}
 		summaries, _, err := client.ActivitiesApi.GetLoggedInAthleteActivities(ctx, req)
 		if err != nil {
-			return fmt.Errorf("failed ListActivities call (page %d, per page %d)", page, pageSize)
+			return fmt.Errorf("failed ListActivities call (page %d, per page %d): %v", page, pageSize, err)
 		}
 		for _, a := range summaries {
 			activity := &updatableActivity{a.Id, a.StartDate, string(*a.Type_), a.Name, int(a.WorkoutType), a.GearId, a.Commute, a.Trainer}
@@ -150,7 +150,7 @@ PageLoop:
 				break PageLoop
 			}
 		}
-		if len(activities) < pageSize {
+		if len(summaries) < pageSize {
 			break
 		}
 		fmt.Printf("%d activities so far, fetching next %d...\n", len(activities), pageSize)
